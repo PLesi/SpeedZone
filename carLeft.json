@@ -1,0 +1,62 @@
+{
+	"textures": [
+		{
+			"image": "carLeft.png",
+			"format": "RGBA8888",
+			"size": {
+				"w": 122,
+				"h": 33
+			},
+			"scale": 1,
+			"frames": [
+				{
+					"filename": "SNES - Top Gear - General Sprites (1)-10.png",
+					"rotated": false,
+					"trimmed": false,
+					"sourceSize": {
+						"w": 59,
+						"h": 31
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 59,
+						"h": 31
+					},
+					"frame": {
+						"x": 1,
+						"y": 1,
+						"w": 59,
+						"h": 31
+					}
+				},
+				{
+					"filename": "SNES - Top Gear - General Sprites (1)-11.png",
+					"rotated": false,
+					"trimmed": false,
+					"sourceSize": {
+						"w": 59,
+						"h": 31
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 59,
+						"h": 31
+					},
+					"frame": {
+						"x": 62,
+						"y": 1,
+						"w": 59,
+						"h": 31
+					}
+				}
+			]
+		}
+	],
+	"meta": {
+		"app": "https://www.codeandweb.com/texturepacker",
+		"version": "3.0",
+		"smartupdate": "$TexturePacker:SmartUpdate:adccdffb5ee28cd182a896019f1ffec5:f1ea2e2ac4f16940b34bd92cf2ffb01e:facfa7d931631c3b612e88ab724be11c$"
+	}
+}

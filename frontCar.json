@@ -1,0 +1,188 @@
+{
+	"textures": [
+		{
+			"image": "frontCar.png",
+			"format": "RGBA8888",
+			"size": {
+				"w": 50,
+				"h": 244
+			},
+			"scale": 1,
+			"frames": [
+				{
+					"filename": "frontCar-2.png",
+					"rotated": false,
+					"trimmed": false,
+					"sourceSize": {
+						"w": 48,
+						"h": 31
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 48,
+						"h": 31
+					},
+					"frame": {
+						"x": 1,
+						"y": 1,
+						"w": 48,
+						"h": 31
+					}
+				},
+				{
+					"filename": "frontCar-3.png",
+					"rotated": false,
+					"trimmed": false,
+					"sourceSize": {
+						"w": 48,
+						"h": 31
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 48,
+						"h": 31
+					},
+					"frame": {
+						"x": 1,
+						"y": 34,
+						"w": 48,
+						"h": 31
+					}
+				},
+				{
+					"filename": "frontCar-0.png",
+					"rotated": false,
+					"trimmed": false,
+					"sourceSize": {
+						"w": 48,
+						"h": 28
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 48,
+						"h": 28
+					},
+					"frame": {
+						"x": 1,
+						"y": 67,
+						"w": 48,
+						"h": 28
+					}
+				},
+				{
+					"filename": "frontCar-1.png",
+					"rotated": false,
+					"trimmed": false,
+					"sourceSize": {
+						"w": 48,
+						"h": 28
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 48,
+						"h": 28
+					},
+					"frame": {
+						"x": 1,
+						"y": 97,
+						"w": 48,
+						"h": 28
+					}
+				},
+				{
+					"filename": "frontCar-4.png",
+					"rotated": false,
+					"trimmed": false,
+					"sourceSize": {
+						"w": 48,
+						"h": 28
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 48,
+						"h": 28
+					},
+					"frame": {
+						"x": 1,
+						"y": 127,
+						"w": 48,
+						"h": 28
+					}
+				},
+				{
+					"filename": "frontCar-5.png",
+					"rotated": false,
+					"trimmed": false,
+					"sourceSize": {
+						"w": 48,
+						"h": 28
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 48,
+						"h": 28
+					},
+					"frame": {
+						"x": 1,
+						"y": 157,
+						"w": 48,
+						"h": 28
+					}
+				},
+				{
+					"filename": "frontCar-6.png",
+					"rotated": false,
+					"trimmed": false,
+					"sourceSize": {
+						"w": 48,
+						"h": 27
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 48,
+						"h": 27
+					},
+					"frame": {
+						"x": 1,
+						"y": 187,
+						"w": 48,
+						"h": 27
+					}
+				},
+				{
+					"filename": "frontCar-7.png",
+					"rotated": false,
+					"trimmed": false,
+					"sourceSize": {
+						"w": 48,
+						"h": 27
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 48,
+						"h": 27
+					},
+					"frame": {
+						"x": 1,
+						"y": 216,
+						"w": 48,
+						"h": 27
+					}
+				}
+			]
+		}
+	],
+	"meta": {
+		"app": "https://www.codeandweb.com/texturepacker",
+		"version": "3.0",
+		"smartupdate": "$TexturePacker:SmartUpdate:d9f9a80d6e614dfc9703ab253f59649b:fbc57f0af6e1666d80a535ab0885280d:54f3ac41869aa02f9a16f4bad05cb40b$"
+	}
+}
