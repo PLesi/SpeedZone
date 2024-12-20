@@ -1,20 +1,22 @@
 <template>
-  <div id="game"></div>
+  <div id="app">
+    <MainMenu />
+  </div>
 </template>
 
 <script>
-import Phaser from 'phaser';
-import GameScene from './game/scenes/GameScene';
+import MainMenu from './components/MainMenu.vue';
 
 export default {
   name: 'App',
-  mounted() {
-    this.game = new Phaser.Game({
-      type: Phaser.AUTO,
-      width: window.innerWidth,
-      height: window.innerHeight,
-      scene: [GameScene],
-    });
-  },
+  components: {
+    MainMenu
+  }
 };
 </script>
+
+<style>
+#app {
+  text-align: center;
+}
+</style>

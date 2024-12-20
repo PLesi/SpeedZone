@@ -1,9 +1,4 @@
-<script setup>
-
-</script>
-
-<template>
-  <!-- TODO:
+ <!-- TODO:
             1. Tlačitka pre nová hra, pokračovať, mutnuť hudbu, ukončiť
                 1.1. Nová hra - spustí hru od začiatku, náhodný level
                 1.2. Pokračovať - spustí hru od posledného vypnutia...údaje uložené v JSON
@@ -15,8 +10,40 @@
             5. Animácia zapnutia menu...viď https://www.superhry.cz/games/916/ (Nadpis aby sa zobrazil z menšieho na väčší)
 
     -->
-</template>
+ <template>
+   <div class="main-menu">
+     <h2>Hlavné Menu</h2>
+     <button @click="startGame">Začať Hru</button>
+     <button @click="showSettings">Nastavenia</button>
+     <button @click="exitGame">Ukončiť</button>
+   </div>
+ </template>
 
-<style scoped>
+ <script>
+ export default {
+   methods: {
+     startGame() {
+       console.log('Hra sa začína');
+       // Tu by ste mohli vyvolať napr. zmenu scény
+     },
+     showSettings() {
+       console.log('Zobraziť nastavenia');
+     },
+     exitGame() {
+       console.log('Ukončiť hru');
+     },
+   },
+ };
+ </script>
 
-</style>
+ <style scoped>
+ .main-menu {
+   display: flex;
+   flex-direction: column;
+   gap: 1em;
+ }
+ button {
+   padding: 0.5em 1em;
+   font-size: 1rem;
+ }
+ </style>
