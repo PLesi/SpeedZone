@@ -5,7 +5,6 @@
 <script>
 import Phaser from 'phaser';
 import GameScene from './game/scenes/GameScene';
-
 export default {
   name: 'App',
   mounted() {
@@ -14,6 +13,7 @@ export default {
       width: window.innerWidth,
       height: window.innerHeight,
       scene: [GameScene],
+      backgroundColor: '#289f7c',
     });
   },
 };
