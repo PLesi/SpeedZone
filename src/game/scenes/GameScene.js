@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 
 let segments = [];
 let drawnSegments = [];
+let isAnimating = false;
 
 export default class GameScene extends Phaser.Scene {
 
@@ -51,6 +52,7 @@ export default class GameScene extends Phaser.Scene {
 
 
 
+
         // Add the road sprite and set it to a specific frame
 
         createRoad(this);
@@ -61,13 +63,32 @@ export default class GameScene extends Phaser.Scene {
         this.player = this.add.sprite(200, 300, 'frontCar').setScale(2);
         this.player.anims.play('frontCar', true);
 
+        this.input.keyboard.on('keydown-W', startAnimation, this);
+        this.input.keyboard.on('keyup-W', stopAnimation, this);
+
     }
 
     update() {
         movement(this, this.player);
-        roadMove(this);
-
+        if (isAnimating) {
+            drawnSegments.forEach(trapezoid => {
+                let progress = trapezoid.getData('progress') + 0.01; // Adjust the animation speed as needed
+                if (progress > 1) {
+                    progress = 0;
+                    resetTrapezoid(trapezoid);
+                }
+                trapezoid.setData('progress', progress);
+                updateTrapezoid(trapezoid);
+            });
+        }
     }
+}
+function startAnimation() {
+    isAnimating = true;
+}
+
+function stopAnimation() {
+    isAnimating = false;
 }
 
 function movement(scene, player) {
@@ -77,18 +98,6 @@ function movement(scene, player) {
     let subSpeed = scene.input.keyboard.addKey('S');
     let left = scene.input.keyboard.addKey('A');
     let right = scene.input.keyboard.addKey('D');
-
-
-    if (addSpeed.isDown) {
-        moveRoad(graphics ,scene);
-    } else if (subSpeed.isDown) {
-        segments.forEach(segment => {
-            segment.y1 -= SPEED;
-            segment.y2 -= SPEED;
-
-            //redrawRoad(scene);
-        });
-    }
 
     if (left.isDown) {
         player.x -= SPEED;
@@ -179,6 +188,7 @@ function createRoad(scene){
         }
         segments.push({
                 id: i,
+                pos: i,
                 invisible: invisible,
                 start: start,
 
@@ -250,6 +260,46 @@ function createRoad(scene){
 
     }
 }
+
+function updateSegment(x1,x2,x3,x4,y1,y2,id){
+    const LANE_WIDTH = 10;
+    const RUMBLE_WIDTH = 20;
+
+    segments[id].x1 = x1;
+    segments[id].x2 = x2;
+    segments[id].x3 = x3;
+    segments[id].x4 = x4;
+    segments[id].y1 = y1;
+    segments[id].y2 = y2;
+
+    segments[id].RrX1 = x1 - RUMBLE_WIDTH;
+    segments[id].RrX2 = x1;
+    segments[id].RrX3 = x3 - RUMBLE_WIDTH;
+    segments[id].RrX4 = x3;
+    segments[id].LrX1 = x2;
+    segments[id].LrX2 = x2 + RUMBLE_WIDTH;
+    segments[id].LrX3 = x4;
+    segments[id].LrX4 = x4 + RUMBLE_WIDTH;
+
+    segments[id].LlMiddleB = x1 + (x2 - x1) / 3;
+    segments[id].RlMiddleB = x2 - (x2 - x1) / 3;
+    segments[id].LlMiddleT = x3 + (x4 - x3) / 3;
+    segments[id].RlMiddleT = x4 - (x4 - x3) / 3;
+
+    segments[id].LlX1 = segments[id].LlMiddleB - LANE_WIDTH/2;
+    segments[id].LlX2 = segments[id].LlMiddleB + LANE_WIDTH/2;
+    segments[id].LlX3 = segments[id].LlMiddleT - LANE_WIDTH/2;
+    segments[id].LlX4 = segments[id].LlMiddleT + LANE_WIDTH/2;
+
+    segments[id].RlX1 = segments[id].RlMiddleB - LANE_WIDTH/2;
+    segments[id].RlX2 = segments[id].RlMiddleB + LANE_WIDTH/2;
+    segments[id].RlX3 = segments[id].RlMiddleT - LANE_WIDTH/2;
+    segments[id].RlX4 = segments[id].RlMiddleT + LANE_WIDTH/2;
+
+
+}
+
+
 function drawRoad(scene) {
     for(let i = 0; i < segments.length; i++){
         let segment = segments[i];
@@ -307,28 +357,41 @@ function drawRoad(scene) {
         graphics.closePath();
         graphics.fillPath();
 
+        graphics.setData({
+                'pos': segment.pos,
+                'invisible': segment.invisible,
+                'start': segment.start,
+
+                'initialWidthTop': segment.x4 - segment.x3,
+                'initialWidthBottom': segment.x2 - segment.x1,
+                'initialHeight': segment.y2 - segment.y1,
+                'initialY': segment.y1,
+
+                'finalWidthTop': segment.x2 - segment.x1,
+                'finalWidthBottom': ( segment.y1 <= 0 ? scene.scale.width : segments[(segment.id - 1 < 0 ? segments[segments.length - 1] : segments[segment.id - 1])]),
+                'finalHeight': (segment.y2 - segment.y1) * 2,
+                'finalY': segment.y1 + (segment.y2 - segment.y1) * 2,
+
+                'progress': 0,
+        });
+
         drawnSegments.push(graphics);
     }
 }
 
-function drawGrass(scene, segment, id) {
-
-
-}
-
-
+f
 function moveRoad(graphics,scene){
     let speed = 5;
     console.log(segments.length);
-    drawnSegments[2].clear();
 
 
 
+    updateSegment(segment.x1,segment.x2,segment.x3,segment.x4,segment.y1,segment.y2,segment.id);
 
-
-
-
-
+    for (let i = 0; i < drawnSegments.length; i++) {
+        drawnSegments[i].clear();
+    }
+    drawRoad(scene);
 
 }
 
