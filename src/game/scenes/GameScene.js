@@ -1,21 +1,26 @@
 import Phaser from 'phaser';
 
-const w = window.innerWidth;
-const h = window.innerHeight;
-const s = w / 2;
-const k = 0.1; // Road curvature
-let roadSegments = [];
+const roadLineColor = 0xFF61C6;
+const roadColor1 = 0x160E21;
+const roadColor2 = 0x190D23;
+const rumbleColor1 = 0xC756E7;
+const grassColor1 = 0x0E0C1D;
+
+
 let lines = [0];
 let colors = [0];
-let numLines = 10;
+let numLines = 1;
 let count = 0;
 let isGrey = false;
 let speed = 0.5;
 let animationSpeed = 1; // Separate variable for controlling the animation speed
+let startGame = false;
 
 export default class GameScene extends Phaser.Scene {
     constructor() {
         super({ key: 'GameScene' });
+        this.dots = '';
+        this.dotCounter = 0;
     }
 
     preload() {
@@ -28,34 +33,10 @@ export default class GameScene extends Phaser.Scene {
 
     create() {
         this.graphics = this.add.graphics();
+        this.loadingScreen = this.add.graphics();
 
-        this.anims.create({
-            key: 'frontCar',
-            frames: this.anims.generateFrameNumbers('frontCar', { start: 0, end: 1 }),
-            frameRate: 10,
-            repeat: -1
-        });
-
-        this.anims.create({
-            key: 'idleRight',
-            frames: this.anims.generateFrameNumbers('idleRight', { start: 0, end: 1 }),
-            frameRate: 10,
-            repeat: -1
-        });
-
-        this.anims.create({
-            key: 'carLeft',
-            frames: this.anims.generateFrameNumbers('carLeft', { start: 0, end: 1 }),
-            frameRate: 10,
-            repeat: -1
-        });
-
-        this.anims.create({
-            key: 'rightCar',
-            frames: this.anims.generateFrameNumbers('rightCar', { start: 0, end: 1 }),
-            frameRate: 10,
-            repeat: -1
-        });
+        // Add Player Car animations
+        animations(this);
 
         // Add the player car sprite
         this.player = this.add.sprite(200, 300, 'frontCar').setScale(2);
@@ -67,6 +48,7 @@ export default class GameScene extends Phaser.Scene {
         this.leftKey = this.input.keyboard.addKey('A');
         this.rightKey = this.input.keyboard.addKey('D');
 
+        // Initialize the update iteration
         this.updateIteration = 0;
     }
 
@@ -109,14 +91,15 @@ function animatedRoad(graphics, scene, delta) {
     graphics.clear();
 
     // Draw the horizon line
-    graphics.lineStyle(1, 0x000000, 1);
+    graphics.lineStyle(1, roadLineColor, 1);
     graphics.moveTo(0, HEIGHT);
     graphics.lineTo(WIDTH, HEIGHT);
 
     if (lines.length > 1) {
-        const topGrassColor = colors[0] === 0 ? 0x00ff00 : 0x006400;
-        const topRoadColor = colors[0] === 0 ? 0x808080 : 0xA9A9A9;
-        const rumbleColor = colors[0] === 0 ? 0xffff00 : 0xff0000;
+        const topGrassColor = colors[0] === 0 ? grassColor1 : grassColor1;
+        const topRoadColor = colors[0] === 0 ? roadColor1 : roadColor2;
+        const rumbleColor = colors[0] === 0 ? rumbleColor1 : rumbleColor1;
+
 
         graphics.fillStyle(topGrassColor, 1);
         graphics.fillRect(0, HEIGHT, WIDTH, HEIGHT * 2);
@@ -143,17 +126,19 @@ function animatedRoad(graphics, scene, delta) {
         if (lines.length > 1) {
             x1N = lines[i+1] + WIDTH / 10;
         }
-        const roadColor = colors[i] === 0 ? 0xA9A9A9 : 0x808080;
-        const grassColor = colors[i] === 0 ? 0x006400 : 0x00ff00;
-        const rumbleColor = colors[i] === 0 ? 0xffff00 : 0xff0000;
+        const roadColor = colors[i] === 0 ? roadColor1 : roadColor2;
+        const grassColor = colors[i] === 0 ? grassColor1 : 0x00ff00;
+        const rumbleColor = colors[i] === 0 ? rumbleColor1 : rumbleColor1;
 
         // Draw left grass
         graphics.fillStyle(grassColor, 1);
-        graphics.fillRect(0, HEIGHT + lines[i], WIDTH / 2 - x1, lines[i + 1] - lines[i]);
+        graphics.lineStyle(2, roadLineColor, 1);
+        graphics.strokeRect(0, HEIGHT + lines[i], WIDTH / 2 - x1, lines[i + 1] - lines[i]);
+
 
         // Draw right grass
-        graphics.fillRect(WIDTH / 2 + x1, HEIGHT + lines[i], WIDTH - (WIDTH / 2 + x1), lines[i + 1] - lines[i]);
-
+        graphics.strokeRect(WIDTH / 2 + x1, HEIGHT + lines[i], WIDTH - (WIDTH / 2 + x1), lines[i + 1] - lines[i]);
+        graphics.lineStyle(0);
         // Draw trapezoid
         graphics.fillStyle(roadColor, 1);
         graphics.beginPath();
@@ -183,9 +168,6 @@ function animatedRoad(graphics, scene, delta) {
         graphics.lineTo(WIDTH / 2 + x1N, HEIGHT + lines[i + 1]);
         graphics.closePath();
         graphics.fillPath();
-
-
-
     }
 
     // Update line positions uniformly
@@ -193,9 +175,7 @@ function animatedRoad(graphics, scene, delta) {
         const heightIncrement = 10 * (i + 1) * 0.1;
         lines[i] += heightIncrement * animationSpeed;  // Adjust height increment and apply animation speed
     }
-
     count += 1;
-
     // Adding new lines
     if (count > 6 / animationSpeed) { // Adjusting the speed of new lines
         count = 0;
@@ -212,7 +192,90 @@ function animatedRoad(graphics, scene, delta) {
         colors.pop();
         numLines -= 1;
     }
+
+    console.log(lines[lines.length-1]);
+    if(lines[lines.length-1] < scene.scale.height) {
+        scene.dotCounter++;
+        if (scene.dotCounter % 30 === 0) {
+            // Adjust the modulus value to control the speed of dots appearance
+            scene.dots += '.';
+            if (scene.dots.length > 3) {
+                scene.dots = '';
+            }
+        }
+        drawLoading(scene, Math.floor(delta / 1000), scene.dots);
+    } else {
+        if (!startGame) {
+            animationSpeed = 0.00007;
+            scene.time.addEvent({
+                delay: 1000,
+                callback: () => {
+                    removeLoading(scene);
+                    startGame = true;
+                },
+                loop: false
+            });
+        }
+    }
+    console.log(animationSpeed);
+
 }
+
+function animations(scene){
+    scene.anims.create({
+        key: 'frontCar',
+        frames: scene.anims.generateFrameNumbers('frontCar', { start: 0, end: 1 }),
+        frameRate: 10,
+        repeat: -1
+    });
+
+    scene.anims.create({
+        key: 'idleRight',
+        frames: scene.anims.generateFrameNumbers('idleRight', { start: 0, end: 1 }),
+        frameRate: 10,
+        repeat: -1
+    });
+
+    scene.anims.create({
+        key: 'carLeft',
+        frames: scene.anims.generateFrameNumbers('carLeft', { start: 0, end: 1 }),
+        frameRate: 10,
+        repeat: -1
+    });
+
+    scene.anims.create({
+        key: 'rightCar',
+        frames: scene.anims.generateFrameNumbers('rightCar', { start: 0, end: 1 }),
+        frameRate: 10,
+        repeat: -1
+    });
+}
+
+function drawLoading(scene, time, dots) {
+    scene.loadingScreen.clear();
+    scene.loadingScreen.fillStyle(0x000000, 1);
+    scene.loadingScreen.fillRect(0, 0, scene.scale.width, scene.scale.height);
+
+    if (!scene.loadingText) {
+        scene.loadingText = scene.add.text(scene.scale.width / 2, scene.scale.height / 2, "Loading" + dots, {
+            fontSize: '32px',
+            fill: '#FFFFFF'
+        }).setOrigin(0.5);
+    } else {
+        scene.loadingText.setText("Loading" + dots);
+    }
+}
+
+function removeLoading(scene) {
+    scene.loadingScreen.clear();
+    scene.loadingText.destroy();
+}
+
+
+
+
+
+
 
 
 
