@@ -12,6 +12,13 @@ export default {
       type: Phaser.AUTO,
       width: window.innerWidth,
       height: window.innerHeight,
+      physics: {
+        default: 'arcade',
+        arcade: {
+          debug: true, // Enable debug to visualize the collision box
+          gravity: { y: 0 }, // Adjust gravity as needed
+        },
+      },
       scene: [GameScene],
       backgroundColor: '#289f7c',
     });
