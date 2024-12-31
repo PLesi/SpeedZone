@@ -1,4 +1,9 @@
 import Phaser from 'phaser';
+import { useViewStore } from '/viewStore.js';
+
+
+// ak localStorage tak if v ktorom budu kon3tanty a v3etky premenne ktore sa budu ukladat do LS budu mat variable = localStorage.getItem('variable') || default
+// omg to je cool,
 
 const COLORS = {
     roadLineColor: 0xFF61C6,    // Pink
@@ -213,15 +218,15 @@ export default class GameScene extends Phaser.Scene {
                     width: WIDTH - bottomWidth/2,
                     tileScaleX: 0.3,
                     tileScaleY: 0.3,
-                    duration: 1500,
+                    duration: 3000,
                     onUpdate: (tween) => {
                         this.poleLeft.y = this.finishLine.y;
                         this.poleRight.y = this.finishLine.y;
                         this.poleLeft.x = this.finishLine.x - this.finishLine.width/2;
                         this.poleRight.x = this.finishLine.x + this.finishLine.width/2;
 
-                        this.poleLeft.height = tween.progress * this.player.height*4*this.player.scale;
-                        this.poleRight.height = tween.progress * this.player.height*4*this.player.scale;
+                        this.poleLeft.height = tween.progress * this.player.height*5*this.player.scale;
+                        this.poleRight.height = tween.progress * this.player.height*5*this.player.scale;
 
                         this.poleRight.width = tween.progress * (this.player.width/20)*this.player.scale;
                         this.poleLeft.width = tween.progress * (this.player.width/20)*this.player.scale;
@@ -250,29 +255,19 @@ export default class GameScene extends Phaser.Scene {
                                     alpha: 1,
                                     duration: 1000,
                                     onComplete: () => {
-                                       // this.scene.start('VictoryScene', { time: this.timer, distance: Math.round(elapsedDistance * 100)/100, level: 1, health: this.player.getData('health') });
-
+                                        // this.scene.start('VictoryScene', { time: this.timer, distance: Math.round(elapsedDistance * 100)/100, level: 1, health: this.player.getData('health') });
+                                        const viewStore = useViewStore();
+                                        viewStore.setView('victory'); // Trigger a transition to Victory view
                                     }
                                 });
 
                             }
 
                         });
-
-                        //TODO: get rid of finish line, poles
-                        //      fade out this scene, go to new scene
-                        //      make new scene with buttons to go to next level or retry or menu
-
-                        //start new scene
                     }
                 });
-
             }
-
         })
-
-
-
     }
 
     setupPlayer(){
@@ -336,7 +331,7 @@ export default class GameScene extends Phaser.Scene {
         this.player.setData('health', this.player.getData('health') - this.currentLevel.enemyDamage); // Decrease the player's health
         this.physics.world.removeCollider(enemy); // Remove the collider to prevent multiple collisions
 
-        let explosion = this.add.sprite(enemy.x, enemy.y, 'explosion').setScale(2).setDepth(2);
+        let explosion = this.add.sprite(enemy.x, enemy.y, 'explosion').setScale((this.player.width*this.player.scale)/48).setDepth(2);
         explosion.anims.play('explosion', true);
 
         explosion.once('animationcomplete', () => {

@@ -1,35 +1,36 @@
-
-
 <template>
-  <img :src="win? 'public/img/VICTORY.png' : 'public/img/GAME-OVER.png'" id="title" alt="Nadpis"/>
-  <button v-if="win" @click="gContinue" class="menuButton">Pokračovať</button>
-  <button @click="restartGame" class="menuButton">Nová hra</button>
-  <button @click="toMenu" class="menuButton" id="toMenuButton">Domov</button>
+  <div>
+    <h1>Victory!</h1>
+    <button @click="goToMenu">Main Menu</button>
+  </div>
 </template>
 
 <script>
-import Phaser from 'phaser';
-import GameScene from './game/scenes/GameScene';
+import { useViewStore } from '@/../viewStore';
+
 export default {
   name: 'Victory',
-  props: {
-    win: Boolean,
-  },
-  methods: {
-    restartGame() {
-      this.$emit('restart');
-    },
-    toMenu() {
-      this.$emit('menu');
-    },
-    gContinue() {
-      this.$emit('continue');
-    },
+  setup() {
+    const viewStore = useViewStore();
+
+    const goToMenu = () => {
+      viewStore.setView('menu'); // Transition to Main Menu
+    };
+
+    return {
+      goToMenu,
+    };
   },
 };
-
 </script>
 
 <style scoped>
-
+h1 {
+  text-align: center;
+}
+button {
+  margin: 10px;
+  padding: 10px;
+  font-size: 16px;
+}
 </style>

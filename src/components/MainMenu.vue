@@ -53,6 +53,8 @@
 <script>
 import Phaser from "phaser";
 import GameScene from "@/game/scenes/GameScene.js";
+import {useViewStore} from '@/../viewStore.js';
+
 
 export default {
   data() {
@@ -88,25 +90,19 @@ export default {
     };
   },
 
-  methods: {
-    startGame() {
-      this.gameStarted = true;
-      const config = {
-        type: Phaser.AUTO,
-        parent: this.$refs.gameContainer,
-        width: window.innerWidth,
-        height: window.innerHeight,
-        scene: [GameScene],
-        physics: {
-          default: "arcade",
-          arcade: {
-            gravity: { y: 0 },
-            debug: true
-          }
-        }
-      };
-      this.game = new Phaser.Game(config);
+  setup() {
+    const viewStore = useViewStore();
+
+    const startGame = () => {
+      viewStore.setView('game'); // Transition to the game
+    };
+
+    return {
+      startGame,
+    };
   },
+  methods: {
+
 
     gContinue() {
       console.log("Continuing game...");
