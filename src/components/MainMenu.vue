@@ -96,7 +96,14 @@ export default {
         parent: this.$refs.gameContainer,
         width: window.innerWidth,
         height: window.innerHeight,
-        scene: [GameScene]
+        scene: [GameScene],
+        physics: {
+          default: "arcade",
+          arcade: {
+            gravity: { y: 0 },
+            debug: true
+          }
+        }
       };
       this.game = new Phaser.Game(config);
   },

@@ -9,7 +9,8 @@ const COLORS = {
     gradient1: '#da19d6',
     gradient2: '#2d2573',
     textColor: '#FFFFFF',
-    hudOutline: 0x201033
+    hudOutline: 0x201033,
+    poleColor: 0x717171
 };
 
 const CAR_COLORS = ['whiteFront', 'blueFront', 'pinkFront'];
@@ -169,6 +170,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     updateHUD(){
+        // TODO: Update the HUD elements
         let speed = (animationSpeed/2.75)*120; // Convert the speed to km/h
         this.speedText.setText(Math.trunc(speed) + "\nkm/h");
         this.healthText.setText("Health:" + this.player.getData('health') + "%");
@@ -188,18 +190,11 @@ export default class GameScene extends Phaser.Scene {
         ).setDepth(0);
         this.finishLine.tileScaleX = 0.1;
         this.finishLine.tileScaleY = 0.1;
-
-
-        this.poleLeft = this.add.rectangle(WIDTH/2 - WIDTH/8, finishLineY  , 2, 4*HEIGHT/50, 0x00ff00).setDepth(0).setOrigin(0.5, 0);
-        this.poleRight = this.add.rectangle(WIDTH/2 + WIDTH/8, finishLineY, 2, 4*HEIGHT/50, 0x0ff000).setDepth(0).setOrigin(0.5, 0);
-        // set origin y 1, .... width should be same ass rumble, and animation: go up, depth behind road -> set depth higher than road, -> go down and scale,
-        // down as far as HEIGHT + height of finish poles, after y of pole is = to y of player, slow down player and make finish line flag a bit transparent
-
+        this.poleLeft = this.add.rectangle(WIDTH/2 - WIDTH/8, finishLineY  , 2, 4*HEIGHT/50, COLORS.poleColor).setDepth(0).setOrigin(0.5, 0);
+        this.poleRight = this.add.rectangle(WIDTH/2 + WIDTH/8, finishLineY, 2, 4*HEIGHT/50, COLORS.poleColor).setDepth(0).setOrigin(0.5, 0);
     }
 
     moveFinishLine(){
-
-
         this.tweens.add({
             targets: [this.poleLeft, this.poleRight],
             y: HEIGHT/2 - HEIGHT/10 + this.finishLine.height/2,
@@ -214,21 +209,23 @@ export default class GameScene extends Phaser.Scene {
                 this.tweens.add({
                     targets: this.finishLine,
                     y: HEIGHT - this.player.height*4,
-                    height: this.player.height,
-                    width: WIDTH - 2*bottomWidth,
+                    height: this.player.height*this.player.scale,
+                    width: WIDTH - bottomWidth/2,
                     tileScaleX: 0.3,
                     tileScaleY: 0.3,
-                    duration: 2500,
+                    duration: 1500,
                     onUpdate: (tween) => {
                         this.poleLeft.y = this.finishLine.y;
                         this.poleRight.y = this.finishLine.y;
                         this.poleLeft.x = this.finishLine.x - this.finishLine.width/2;
                         this.poleRight.x = this.finishLine.x + this.finishLine.width/2;
 
-                        this.poleLeft.height = tween.progress * this.player.height*4;
-                        this.poleRight.height = tween.progress * this.player.height*4;
+                        this.poleLeft.height = tween.progress * this.player.height*4*this.player.scale;
+                        this.poleRight.height = tween.progress * this.player.height*4*this.player.scale;
 
-                    },
+                        this.poleRight.width = tween.progress * (this.player.width/20)*this.player.scale;
+                        this.poleLeft.width = tween.progress * (this.player.width/20)*this.player.scale;
+                        },
                     onComplete: () => {
                         greenLight = false;
                         this.stopTimer();
@@ -237,7 +234,7 @@ export default class GameScene extends Phaser.Scene {
                             targets: this.finishLine,
                             alpha: 0,
                             y: HEIGHT + this.poleRight.height + this.player.height,
-                            duration: 2500,
+                            duration: 1000,
                             onUpdate: (tween) => {
                                 this.poleLeft.y = this.finishLine.y;
                                 this.poleRight.y = this.finishLine.y;
