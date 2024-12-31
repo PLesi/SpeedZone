@@ -1,0 +1,49 @@
+{
+  "levels": [
+    {
+      "level": 1,
+      "difficulty": "easy",
+      "speed": 1.5,
+      "enemyDamage": 10,
+      "numberOfEnemies": 3,
+      "enemies": [
+        { "startPosition": "left", "appearanceTime": 0.10 },
+        { "startPosition": "middle", "appearanceTime": 0.20 },
+        { "startPosition": "right", "appearanceTime": 0.40 }
+      ],
+      "roadLength": 5.00
+    },
+    {
+      "level": 2,
+      "difficulty": "medium",
+      "speed": 7,
+      "enemyDamage": 15,
+      "numberOfEnemies": 5,
+      "enemies": [
+        { "startPosition": "left", "appearanceTime": 2 },
+        { "startPosition": "middle", "appearanceTime": 4 },
+        { "startPosition": "right", "appearanceTime": 6 },
+        { "startPosition": "middle", "appearanceTime": 8 },
+        { "startPosition": "left", "appearanceTime": 10 }
+      ],
+      "roadLength": 1500
+    },
+    {
+      "level": 3,
+      "difficulty": "hard",
+      "speed": 10,
+      "enemyDamage": 20,
+      "numberOfEnemies": 7,
+      "enemies": [
+        { "startPosition": "right", "appearanceTime": 1 },
+        { "startPosition": "middle", "appearanceTime": 3 },
+        { "startPosition": "left", "appearanceTime": 4 },
+        { "startPosition": "middle", "appearanceTime": 6 },
+        { "startPosition": "right", "appearanceTime": 8 },
+        { "startPosition": "left", "appearanceTime": 10 },
+        { "startPosition": "middle", "appearanceTime": 12 }
+      ],
+      "roadLength": 2000
+    }
+  ]
+}
