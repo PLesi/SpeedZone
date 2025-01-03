@@ -23,6 +23,8 @@ const CAR_LEFT = ['whiteSLeft', 'blueSLeft', 'pinkSLeft'];
 const CAR_RIGHT = ['whiteSRight', 'blueSRight', 'pinkSRight'];
 const finishAnimation = [];
 
+let win = false;
+
 // VARIABLES TO TAKE FROM LS
 let lines = [0];
 let colors = [0];
@@ -34,8 +36,15 @@ let speed = 0;
 let startGame = false;
 let greenLight = false;
 let levels;
-const WIDTH = window.innerWidth;
-const HEIGHT = window.innerHeight;
+let WIDTH, HEIGHT;
+let playerRoadWidth = 0;
+if (window.innerHeight > window.innerWidth) {
+    WIDTH = window.innerHeight;
+    HEIGHT = window.innerWidth;
+} else {
+    WIDTH = window.innerWidth;
+    HEIGHT = window.innerHeight;
+}
 const topWidth = WIDTH / 4;
 let bottomWidth = 0;
 let elapsedDistance = 0;// LS
@@ -45,13 +54,12 @@ let spawnedEnemies = 0; // LS
 export default class GameScene extends Phaser.Scene {
     constructor() {
         super({ key: 'GameScene' });
-        this.dots = '';
-        this.dotCounter = 0;
-        this.timer = 0;
-        this.sceneEnemies = [];
+        this.cursors = null;
+        this.addSpeedKey = null;
+        this.subSpeedKey = null;
+        this.leftKey = null;
+        this.rightKey = null;
 
-        this.currentLevel = 1;
-        this.dificulty = 1;
     }
 
     preload() {
@@ -59,23 +67,62 @@ export default class GameScene extends Phaser.Scene {
     }
 
     create() {
+        // Start fresh
+        this.initializeVariables();
         this.setupGraphics();
         this.setupFinishLine();
         this.createAnimations();
-        this.setupKeyboard(); // TODO: setup gyroscope and mouse input
         this.setupPlayer();
+        this.player.setScale(1);
         this.getLevel();
         this.setupEnemies();
         this.setupHUD();
+        this.roadMovement(16);
+        this.setupKeyboard();
 
-        // Initialize the update iteration
+
+
+        // Initialize mouse control tracking
+        this.isMouseActive = false;
+
+        // Listen for mouse interactions
+        this.input.on('pointerdown', () => {
+            this.isMouseActive = true; // Enable mouse control
+        });
+
     }
 
     update(time, delta) {
         this.movement();
+        this.gyroscopeMovement();
         this.roadMovement(delta);
         this.racePreparations();
         this.updateHUD();
+    }
+    initializeVariables() {
+        // Scene variables
+        this.dots = '';
+        this.dotCounter = 0;
+        this.timer = 0;
+        this.sceneEnemies = [];
+        this.timerEvent = null;
+
+        // Global variables
+        lines = [0];
+        colors = [0];
+        numLines = 1;
+        count = 0;
+        animationSpeed = 1;
+        speed = 0;
+        isGrey = false;
+        startGame = false;
+        greenLight = false;
+        win = false;
+        elapsedDistance = 0;
+        spawnedEnemies = 0;
+        bottomWidth = 0;
+        playerRoadWidth = 0;
+
     }
 
     loadAssets(){
@@ -135,7 +182,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     setupHUD(){
-        const DASHBOARD_HEIGHT = this.scale.height/10;
+        const DASHBOARD_HEIGHT = HEIGHT/10;
 
         this.info.clear();
         createGradientShape(this, WIDTH/2, DASHBOARD_HEIGHT/2, WIDTH, DASHBOARD_HEIGHT, COLORS.gradient1,  COLORS.gradient2, 'rectangle');
@@ -154,21 +201,21 @@ export default class GameScene extends Phaser.Scene {
         }).setOrigin(-0.2, 0).setDepth(4);
 
         this.healthText = this.add.text(DASHBOARD_HEIGHT*2 + 10, DASHBOARD_HEIGHT / 2, "Health: 100%", {
-            fontSize: `${this.scale.width/50}px`,
+            fontSize: `${WIDTH/50}px`,
             fill: COLORS.textColor,
         }).setOrigin(0,0.5).setDepth(4);
 
-        this.timeText = this.add.text(this.scale.width/2, DASHBOARD_HEIGHT / 2, "Time: " + this.timer + "s", {
-            fontSize: `${this.scale.width/50}px`,
+        this.timeText = this.add.text(WIDTH/2, DASHBOARD_HEIGHT / 2, "Time: " + this.timer + "s", {
+            fontSize: `${WIDTH/50}px`,
             fill: COLORS.textColor,
         }).setOrigin(0.5,0.5).setDepth(4);
 
-        this.distanceText = this.add.text(this.scale.width - DASHBOARD_HEIGHT*2 - 10, DASHBOARD_HEIGHT / 2, "Distance: 0m", {
-            fontSize: `${this.scale.width/50}px`,
+        this.distanceText = this.add.text(WIDTH - DASHBOARD_HEIGHT*2 - 10, DASHBOARD_HEIGHT / 2, "Distance: 0m", {
+            fontSize: `${WIDTH/50}px`,
             fill: COLORS.textColor,
         }).setOrigin(1,0.5).setDepth(4);
 
-        this.levelText = this.add.text(this.scale.width - 10, DASHBOARD_HEIGHT / 2, "Level: 1", {
+        this.levelText = this.add.text(WIDTH - 10, DASHBOARD_HEIGHT / 2, "Level: 1", {
             fontSize: `${DASHBOARD_HEIGHT/3}px`,
             fill: COLORS.textColor,
         }).setOrigin(1,0.5).setDepth(4);
@@ -255,8 +302,15 @@ export default class GameScene extends Phaser.Scene {
                                     alpha: 1,
                                     duration: 1000,
                                     onComplete: () => {
-                                        // this.scene.start('VictoryScene', { time: this.timer, distance: Math.round(elapsedDistance * 100)/100, level: 1, health: this.player.getData('health') });
+                                        win = true;
+                                        const dataToPass = {
+                                            level: this.currentLevel.level,
+                                            difficulty: this.currentLevel.dificulty,
+                                            win: win,
+
+                                        }
                                         const viewStore = useViewStore();
+                                        viewStore.setSceneData(dataToPass); // Store the data to pass to the next scene
                                         viewStore.setView('victory'); // Trigger a transition to Victory view
                                     }
                                 });
@@ -270,8 +324,15 @@ export default class GameScene extends Phaser.Scene {
         })
     }
 
-    setupPlayer(){
-        this.player = this.physics.add.sprite(WIDTH/2, HEIGHT - HEIGHT/15, 'frontCar').setScale(2).setDepth(1);
+    setupPlayer() {
+        if (this.player) {
+            this.player.destroy();
+        }
+
+        this.player = this.physics.add.sprite(WIDTH/2, HEIGHT - HEIGHT/15, 'frontCar')
+            .setScale(1)  // Start with default scale
+            .setDepth(1);
+
         this.player.anims.play('frontCar', true);
         this.player.setData('health', 100);
         this.player.body.setCollideWorldBounds(true);
@@ -279,14 +340,15 @@ export default class GameScene extends Phaser.Scene {
         this.player.body.setOffset(0, this.player.height * 0.1);
     }
 
+
     updatePlayerCollider(){
-        this.player.body.setSize(this.player.width, this.player.height * 0.8);
+        this.player.body.setSize(this.player.width * 0.95, this.player.height * 0.6);
     }
 
 
     setupEnemies(){
         let enemyX = 0;
-        this.currentLevel.enemies.forEach(enemy => {
+        this.currentLevel.difficultyVersions[0].enemies.forEach(enemy => {
             let animationKey = null;
             switch (enemy.startPosition) {
                 case 'left':
@@ -306,12 +368,13 @@ export default class GameScene extends Phaser.Scene {
             newEnemy.x = enemyX;        // LS
             newEnemy.startPosition = enemy.startPosition;
             newEnemy.anims.play(animationKey, true);
-            newEnemy.body.setSize(newEnemy.width, newEnemy.height * 0.8);
-            newEnemy.body.setOffset(0, newEnemy.height * 0.1);
+            newEnemy.body.setSize(newEnemy.width * 0.95, newEnemy.height * 0.6);
+            newEnemy.body.setOffset(0, newEnemy.height * 0.3);
             newEnemy.setData('appearanceTime', enemy.appearanceTime);
             newEnemy.setData('onScreen',false);
             newEnemy.setData('collided', false);
             this.physics.add.overlap(this.player, newEnemy, this.handleCollision, null, this);
+
 
             this.sceneEnemies.push(newEnemy);  // Add the enemy to the sceneEnemies array
             // SAVE ENEMY X FROM ARRAY TO LS
@@ -385,7 +448,7 @@ export default class GameScene extends Phaser.Scene {
             this.tweens.add({
                 targets: enemy,
                 x: direction,
-                y: HEIGHT + 32 * (this.player.scale + 0.5),
+                y: HEIGHT + 32 * (this.player.scale + 1.5),
                 ease: 'Linear',
                 duration: duration,
                 onUpdate: (tween) => {
@@ -399,7 +462,7 @@ export default class GameScene extends Phaser.Scene {
 
     roadMovement(delta){
         const halfWidth = WIDTH / 2;
-        const halfHeight = this.scale.height / 2;
+        const halfHeight = HEIGHT / 2;
         let roadMaxWidth = 0;
         let graphics = this.graphics;
 
@@ -428,6 +491,13 @@ export default class GameScene extends Phaser.Scene {
             const x2 = lines[i + 1] + WIDTH / 8;
             if (!startGame)
                 roadMaxWidth = x1;
+            //get width of road on y on which is player
+            if (this.player.y < halfHeight + lines[i + 1] && this.player.y > halfHeight + lines[i]) {
+                playerRoadWidth = x1;
+                console.log(playerRoadWidth);
+            }
+
+
             const roadColor = colors[i] === 0 ? COLORS.roadColor1 : COLORS.roadColor2;
             const grassColor = colors[i] === 0 ? COLORS.grassColor1 : 0x00ff00;
             const rumbleColor = COLORS.rumbleColor1;
@@ -460,7 +530,8 @@ export default class GameScene extends Phaser.Scene {
             numLines--;
         }
 
-        if (lines[lines.length - 1] < this.scale.height) {
+
+        if (lines[lines.length - 1] < HEIGHT) {
             this.dotCounter++;
             if (this.dotCounter % 30 === 0) {
                 this.dots = '.'.repeat((this.dots.length % 3) + 1);
@@ -547,50 +618,138 @@ export default class GameScene extends Phaser.Scene {
         levels = this.cache.json.get('levels');
 
         this.currentLevel = levels.levels[0];   //TODO add random level selection, and dificulty...and make sure im not repeating levels i played before. LocalStorage?
-        this.dificulty = this.currentLevel.dificulty;
+        this.dificulty = this.currentLevel.difficulty;
 
-        this.currentLevel.enemies.forEach(enemy => {
+        this.currentLevel.difficultyVersions[0].enemies.forEach(enemy => {
             // Example: Place enemies at their positions based on the data as a red circle
             console.log(`Enemy at ${enemy.startPosition}, appearing at ${enemy.appearanceTime}`);
         });
     }
+    gyroscopeMovement() {
+        if (this.gyroData) {
+            // Map beta (tilt forward/back) to vertical movement
+            this.player.x+= this.gyroData.beta * 0.1;
 
-    setupKeyboard(){
-        this.addSpeedKey = this.input.keyboard.addKey('W'); //TODO DELETE THESE TWO
-        this.subSpeedKey = this.input.keyboard.addKey('S');
-        this.leftKey = this.input.keyboard.addKey('A');
-        this.rightKey = this.input.keyboard.addKey('D');
+            // Map gamma (tilt left/right) to horizontal movement
+        }
     }
+    handleOrientation(event) {
+        const angle = window.screen.orientation
+            ? window.screen.orientation.angle
+            : window.orientation || 0;
 
+        let beta = event.beta; // Front-to-back tilt (rotation around the X-axis)
+
+        // Adjust beta based on device orientation
+        if (angle === 90) {
+            // Landscape mode (rotated right)
+            beta = event.beta;
+        } else if (angle === -90) {
+            // Landscape mode (rotated left)
+            beta = - event.beta;
+        }
+        // Update the gyroData object with the corrected beta value
+        this.gyroData.beta = beta;
+    }
+    setupKeyboard() {
+        this.gyroData = { beta: 0 };
+        // Input tracking
+        this.cursors = this.input.keyboard.createCursorKeys();
+        this.lastKeyboardInput = 0;
+        this.lastMouseInput = 0;
+
+        this.input.on('pointermove', (pointer) => {
+            this.lastMouseInput = this.time.now;
+            this.mouseTarget = { x: pointer.x, y: pointer.y };
+        });
+
+        this.input.keyboard.on('keydown', () => {
+            this.lastKeyboardInput = this.time.now;
+        });
+
+        window.addEventListener("deviceorientation", this.handleOrientation.bind(this));
+        this.input.keyboard.removeAllKeys(true);
+        this.leftKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
+        this.rightKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
+        this.input.keyboard.enabled = true;
+    }
     movement() {
+        if (!this.player) return;
+
+        const now = this.time.now;
+        let isUsingMouse = false; // Last mouse input within 300ms
+
+        if(now - this.lastMouseInput < now - this.lastKeyboardInput){
+            isUsingMouse = true;
+        } else {
+            isUsingMouse = false;
+        }
+
+        // Base speed calculation
         const baseSpeed = WIDTH / 800;
         let steerSpeed = baseSpeed * animationSpeed;
 
-        if (this.leftKey.isDown) {
+        // Mouse movement logic
+        if (isUsingMouse) {
+            const pointerX = this.input.activePointer.worldX;
+
+            if (pointerX > this.player.x + 10) {
+                this.player.x += steerSpeed;
+                this.player.anims.play('rightCar', true);
+            } else if (pointerX < this.player.x - 10) {
+                this.player.x -= steerSpeed;
+                this.player.anims.play('carLeft', true);
+            } else {
+                this.player.anims.play('frontCar', true);
+            }
+
+            this.updatePlayerCollider();
+        }
+        // Keyboard movement logic
+        else if (this.leftKey?.isDown) {
+            this.isMouseActive = false; // Disable mouse control when keyboard is active
             this.player.x -= steerSpeed;
             this.player.anims.play('carLeft', true);
             this.updatePlayerCollider();
-
-        } else if (this.rightKey.isDown) {
+        } else if (this.rightKey?.isDown) {
+            this.isMouseActive = false; // Disable mouse control when keyboard is active
             this.player.x += steerSpeed;
             this.player.anims.play('rightCar', true);
             this.updatePlayerCollider();
-
         } else {
-            if (this.player.x >= WIDTH/2 + WIDTH/10) {
+            // Idle animation logic
+            if (this.player.x >= WIDTH / 2 + WIDTH / 10) {
                 this.player.anims.play('redSLeft', true);
-                this.updatePlayerCollider();
-
-                //TODO MAKE AN ANIMATION FOR WHEN CAR IS ON RIGHT SIDE
-            }else if (this.player.x <= WIDTH/2 - WIDTH/10) {
+            } else if (this.player.x <= WIDTH / 2 - WIDTH / 10) {
                 this.player.anims.play('redSRight', true);
-                this.updatePlayerCollider();
+            } else {
+                this.player.anims.play('frontCar', true);
             }
-            else {
-                this.player.anims.play('frontCar', true); //TODO do these animations when is middle of car on same x as is start of top line or end
-                this.updatePlayerCollider();
-            }
+
+            this.updatePlayerCollider();
         }
+
+        // Prevent the player from going out of bounds
+        const leftLimit = WIDTH/2 - playerRoadWidth ;
+        const rightLimit = WIDTH/2 + playerRoadWidth ;
+
+        if (this.player.x < leftLimit) {
+            this.player.x = leftLimit;
+        } else if (this.player.x > rightLimit) {
+            this.player.x = rightLimit;
+        }
+    }
+
+    shutdown() {
+        // Clean up keyboard bindings
+        if (this.input?.keyboard) {
+            this.input.keyboard.removeAllKeys(true);
+        }
+        this.cursors = null;
+        this.addSpeedKey = null;
+        this.subSpeedKey = null;
+        this.leftKey = null;
+        this.rightKey = null;
     }
 
     addSpeed() {
@@ -638,6 +797,30 @@ export default class GameScene extends Phaser.Scene {
 
             updateSpeed(); // Start the interpolation process
         }
+    }
+
+    resetGameState() {
+        // Properly clean up input before reset
+        this.shutdown();
+
+        // Reset all other game state
+        this.initializeVariables();
+        this.children.removeAll(true);
+
+        if (this.graphics) this.graphics.clear();
+        if (this.info) this.info.clear();
+        if (this.loadingScreen) this.loadingScreen.clear();
+
+        if (this.physics.world) {
+            this.physics.world.colliders.destroy();
+        }
+
+        if (this.tweens) {
+            this.tweens.killAll();
+        }
+
+        // Restart scene which will trigger create() again
+        this.scene.restart();
     }
 
 }
@@ -719,5 +902,6 @@ function getRandomItem(array) {
     const randomIndex = Math.floor(Math.random() * array.length);
     return array[randomIndex];
 }
+
 
 

@@ -142,6 +142,24 @@ export default {
   }
 };
 </script>
+<style>
+.menuButton {
+  font-size: 2.5vh;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  border: 2px solid #a2d2ff;
+  border-radius: 8px;
+  box-shadow: 0 0 8px 4px #d7f9f8;
+  transition: background-color 0.3s, color 0.3s;
+  width: 13.5vw;
+  height: 7.5vh;
+}
+
+.menuButton:hover {
+  background-color: rgba(240, 245, 255, 0.8);
+  color: black;
+}
+</style>
 
 <style scoped>
 .menu {
@@ -175,7 +193,6 @@ export default {
   justify-content: start;
   margin-top: 25px;
 }
-
 .menuButton {
   font-size: 2.5vh;
   background-color: rgba(0, 0, 0, 0.7);
@@ -325,5 +342,7 @@ button {
 #muteButton:hover {
   transform: scale(1.1);
 }
+
+
 
 </style>

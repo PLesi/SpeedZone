@@ -4,14 +4,27 @@
       "level": 1,
       "difficulty": "easy",
       "speed": 1.5,
-      "enemyDamage": 10,
+      "enemyDamage": 20,
       "numberOfEnemies": 3,
-      "enemies": [
-        { "startPosition": "left", "appearanceTime": 0.10 },
-        { "startPosition": "middle", "appearanceTime": 0.20 },
-        { "startPosition": "right", "appearanceTime": 0.40 }
+      "difficultyVersions": [
+        {
+          "version": 1,
+          "enemies": [
+            { "startPosition": "left", "appearanceTime": 0.05 },
+            { "startPosition": "middle", "appearanceTime": 0.15 },
+            { "startPosition": "right", "appearanceTime": 0.20 },
+            { "startPosition": "left", "appearanceTime": 0.30 },
+            { "startPosition": "middle", "appearanceTime": 0.30 },
+
+            { "startPosition": "right", "appearanceTime": 0.40 },
+            { "startPosition": "left", "appearanceTime": 0.40 },
+            { "startPosition": "middle", "appearanceTime": 0.50 },
+            { "startPosition": "right", "appearanceTime": 0.55 },
+            { "startPosition": "left", "appearanceTime": 0.60}
+          ]
+        }
       ],
-      "roadLength": 5.00
+      "roadLength": 5.05
     },
     {
       "level": 2,
