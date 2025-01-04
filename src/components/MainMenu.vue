@@ -157,6 +157,7 @@ export default {
         this.currentRuleIndex--;
       }
     },
+
     printAllRules() {
       const printableText = this.rules.map(rule => `
       <h3>${rule.title}</h3>
