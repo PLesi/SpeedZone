@@ -1,16 +1,18 @@
 import Phaser from 'phaser';
-import { useViewStore } from '/viewStore.js';
+import {
+    useViewStore
+} from '/viewStore.js';
 
 
 // ak localStorage tak if v ktorom budu kon3tanty a v3etky premenne ktore sa budu ukladat do LS budu mat variable = localStorage.getItem('variable') || default
 // omg to je cool,
 
 const COLORS = {
-    roadLineColor: 0xFF61C6,    // Pink
-    roadColor1: 0x160E21,       // Dark purple
-    roadColor2: 0x190D23,       // Darker purple
-    rumbleColor1: 0xC756E7,     // Light purple
-    grassColor1: 0x0E0C1D,      // Darkest purple
+    roadLineColor: 0xFF61C6, // Pink
+    roadColor1: 0x160E21, // Dark purple
+    roadColor2: 0x190D23, // Darker purple
+    rumbleColor1: 0xC756E7, // Light purple
+    grassColor1: 0x0E0C1D, // Darkest purple
     gradient1: '#da19d6',
     gradient2: '#2d2573',
     textColor: '#FFFFFF',
@@ -38,6 +40,8 @@ let greenLight = false;
 let levels;
 let WIDTH, HEIGHT;
 let playerRoadWidth = 0;
+const playedLevels = new Map(JSON.parse(localStorage.getItem('playedLevels')) || new Map());
+
 if (window.innerHeight > window.innerWidth) {
     WIDTH = window.innerHeight;
     HEIGHT = window.innerWidth;
@@ -47,13 +51,15 @@ if (window.innerHeight > window.innerWidth) {
 }
 const topWidth = WIDTH / 4;
 let bottomWidth = 0;
-let elapsedDistance = 0;// LS
+let elapsedDistance = 0; // LS
 let spawnedEnemies = 0; // LS
 
 
 export default class GameScene extends Phaser.Scene {
     constructor() {
-        super({ key: 'GameScene' });
+        super({
+            key: 'GameScene'
+        });
         this.cursors = null;
         this.addSpeedKey = null;
         this.subSpeedKey = null;
@@ -79,6 +85,21 @@ export default class GameScene extends Phaser.Scene {
         this.setupHUD();
         this.roadMovement(16);
         this.setupKeyboard();
+        // In your create() method:
+        const saveButton = this.add.text(100, 50, 'Save Game', {
+            fill: '#fff'
+        })
+            .setInteractive()
+            .setDepth(100)
+            .on('pointerdown', () => saveGameState(this));
+
+        const loadButton = this.add.text(250, 50, 'Load Game', {
+            fill: '#fff'
+        })
+            .setInteractive()
+            .setDepth(100)
+            .on('pointerdown', () => resumeGameState(this));
+
 
 
 
@@ -98,6 +119,7 @@ export default class GameScene extends Phaser.Scene {
         this.roadMovement(delta);
         this.racePreparations();
         this.updateHUD();
+        this.endOfGame();
     }
     initializeVariables() {
         // Scene variables
@@ -125,30 +147,202 @@ export default class GameScene extends Phaser.Scene {
 
     }
 
-    loadAssets(){
+    loadAssets() {
         this.assets = [
-            { key:'frontCar',   path:'img/frontCar.png',   frame: { frameWidth:  50, frameHeight:  33 }, type:'spriteSheet', start: 0, end:  1, frameRate: 10, repeat: -1 },
-            { key:'whiteFront', path:'img/whiteFront.png', frame: { frameWidth:  48, frameHeight:  28 }, type:'spriteSheet', start: 0, end:  1, frameRate: 10, repeat: -1 },
-            { key:'whiteSLeft', path:'img/whiteSLeft.png', frame: { frameWidth: 53.5,frameHeight:  28 }, type:'spriteSheet', start: 0, end:  1, frameRate: 10, repeat: -1 },
-            { key:'whiteSRight',path:'img/whiteSRight.png',frame: { frameWidth: 53.5,frameHeight:  28 }, type:'spriteSheet', start: 0, end:  1, frameRate: 10, repeat: -1 },
-            { key:'blueFront',  path:'img/blueFront.png',  frame: { frameWidth:  48, frameHeight:  27 }, type:'spriteSheet', start: 0, end:  1, frameRate: 10, repeat: -1 },
-            { key:'blueSLeft',  path:'img/blueSLeft.png',  frame: { frameWidth:  54, frameHeight:  27 }, type:'spriteSheet', start: 0, end:  1, frameRate: 10, repeat: -1 },
-            { key:'blueSRight', path:'img/blueSRight.png', frame: { frameWidth:  54, frameHeight:  27 }, type:'spriteSheet', start: 0, end:  1, frameRate: 10, repeat: -1 },
-            { key:'pinkFront',  path:'img/pinkFront.png',  frame: { frameWidth:  48, frameHeight:  28 }, type:'spriteSheet', start: 0, end:  1, frameRate: 10, repeat: -1 },
-            { key:'pinkSLeft',  path:'img/pinkSLeft.png',  frame: { frameWidth:  54, frameHeight:  28 }, type:'spriteSheet', start: 0, end:  1, frameRate: 10, repeat: -1 },
-            { key:'pinkSRight', path:'img/pinkSRight.png', frame: { frameWidth:  54, frameHeight:  28 }, type:'spriteSheet', start: 0, end:  1, frameRate: 10, repeat: -1 },
-            { key:'carLeft',    path:'img/carLeft.png',    frame: { frameWidth:  59, frameHeight:  31 }, type:'spriteSheet', start: 0, end:  1, frameRate: 10, repeat: -1 },
-            { key:'rightCar',   path:'img/rightCar.png',   frame: { frameWidth:  59, frameHeight:  31 }, type:'spriteSheet', start: 0, end:  1, frameRate: 10, repeat: -1 },
-            { key:'redSRight',  path:'img/redSRight.png',  frame: { frameWidth:  54, frameHeight:  31 }, type:'spriteSheet', start: 0, end:  1, frameRate: 10, repeat: -1 },
-            { key:'redSLeft',   path:'img/redSLeft.png',   frame: { frameWidth:  54, frameHeight:  31 }, type:'spriteSheet', start: 0, end:  1, frameRate: 10, repeat: -1 },
-            { key:'lakituStart',path:'img/lakitu.png',     frame: { frameWidth: 500, frameHeight: 410 }, type:'spriteSheet', start: 0, end:  3, frameRate:  1, repeat:  0 },
-            { key:'explosion',  path:'img/explosion.png',  frame: { frameWidth:  80, frameHeight:  48 }, type:'spriteSheet', start: 0, end: 11, frameRate: 15, repeat:  0 },
-            { key:'finish',     path:'img/finish.png',     type: 'image'},
-            { key:'background', path:'img/background.png', type: 'image'},
-            { key:'levels',     path:'levels.json',        type: 'json' },
-        ];
+            {key: 'frontCar', path: 'img/frontCar.png', frame: {frameWidth: 50, frameHeight: 33}, type: 'spriteSheet', start: 0, end: 1, frameRate: 10, repeat: -1},
+            {key: 'whiteFront', path: 'img/whiteFront.png',
+            frame: {
+                frameWidth: 48,
+                frameHeight: 28
+            },
+            type: 'spriteSheet',
+            start: 0,
+            end: 1,
+            frameRate: 10,
+            repeat: -1
+        }, {
+            key: 'whiteSLeft',
+            path: 'img/whiteSLeft.png',
+            frame: {
+                frameWidth: 53.5,
+                frameHeight: 28
+            },
+            type: 'spriteSheet',
+            start: 0,
+            end: 1,
+            frameRate: 10,
+            repeat: -1
+        }, {
+            key: 'whiteSRight',
+            path: 'img/whiteSRight.png',
+            frame: {
+                frameWidth: 53.5,
+                frameHeight: 28
+            },
+            type: 'spriteSheet',
+            start: 0,
+            end: 1,
+            frameRate: 10,
+            repeat: -1
+        }, {
+            key: 'blueFront',
+            path: 'img/blueFront.png',
+            frame: {
+                frameWidth: 48,
+                frameHeight: 27
+            },
+            type: 'spriteSheet',
+            start: 0,
+            end: 1,
+            frameRate: 10,
+            repeat: -1
+        }, {
+            key: 'blueSLeft',
+            path: 'img/blueSLeft.png',
+            frame: {
+                frameWidth: 54,
+                frameHeight: 27
+            },
+            type: 'spriteSheet',
+            start: 0,
+            end: 1,
+            frameRate: 10,
+            repeat: -1
+        }, {
+            key: 'blueSRight',
+            path: 'img/blueSRight.png',
+            frame: {
+                frameWidth: 54,
+                frameHeight: 27
+            },
+            type: 'spriteSheet',
+            start: 0,
+            end: 1,
+            frameRate: 10,
+            repeat: -1
+        }, {
+            key: 'pinkFront',
+            path: 'img/pinkFront.png',
+            frame: {
+                frameWidth: 48,
+                frameHeight: 28
+            },
+            type: 'spriteSheet',
+            start: 0,
+            end: 1,
+            frameRate: 10,
+            repeat: -1
+        }, {
+            key: 'pinkSLeft',
+            path: 'img/pinkSLeft.png',
+            frame: {
+                frameWidth: 54,
+                frameHeight: 28
+            },
+            type: 'spriteSheet',
+            start: 0,
+            end: 1,
+            frameRate: 10,
+            repeat: -1
+        }, {
+            key: 'pinkSRight',
+            path: 'img/pinkSRight.png',
+            frame: {
+                frameWidth: 54,
+                frameHeight: 28
+            },
+            type: 'spriteSheet',
+            start: 0,
+            end: 1,
+            frameRate: 10,
+            repeat: -1
+        }, {
+            key: 'carLeft',
+            path: 'img/carLeft.png',
+            frame: {
+                frameWidth: 59,
+                frameHeight: 31
+            },
+            type: 'spriteSheet',
+            start: 0,
+            end: 1,
+            frameRate: 10,
+            repeat: -1
+        }, {
+            key: 'rightCar',
+            path: 'img/rightCar.png',
+            frame: {
+                frameWidth: 59,
+                frameHeight: 31
+            },
+            type: 'spriteSheet',
+            start: 0,
+            end: 1,
+            frameRate: 10,
+            repeat: -1
+        }, {
+            key: 'redSRight',
+            path: 'img/redSRight.png',
+            frame: {
+                frameWidth: 54,
+                frameHeight: 31
+            },
+            type: 'spriteSheet',
+            start: 0,
+            end: 1,
+            frameRate: 10,
+            repeat: -1
+        }, {
+            key: 'redSLeft',
+            path: 'img/redSLeft.png',
+            frame: {
+                frameWidth: 54,
+                frameHeight: 31
+            },
+            type: 'spriteSheet',
+            start: 0,
+            end: 1,
+            frameRate: 10,
+            repeat: -1
+        }, {
+            key: 'lakituStart',
+            path: 'img/lakitu.png',
+            frame: {
+                frameWidth: 500,
+                frameHeight: 410
+            },
+            type: 'spriteSheet',
+            start: 0,
+            end: 3,
+            frameRate: 1,
+            repeat: 0
+        }, {
+            key: 'explosion',
+            path: 'img/explosion.png',
+            frame: {
+                frameWidth: 80,
+                frameHeight: 48
+            },
+            type: 'spriteSheet',
+            start: 0,
+            end: 11,
+            frameRate: 15,
+            repeat: 0
+        }, {
+            key: 'finish',
+            path: 'img/finish.png',
+            type: 'image'
+        }, {
+            key: 'background',
+            path: 'img/background.png',
+            type: 'image'
+        }, {
+            key: 'levels',
+            path: 'levels.json',
+            type: 'json'
+        }, ];
         this.assets.forEach(asset => {
-            switch(asset.type){
+            switch (asset.type) {
                 case 'spriteSheet':
                     this.load.spritesheet(asset.key, asset.path, asset.frame);
                     break;
@@ -161,12 +355,15 @@ export default class GameScene extends Phaser.Scene {
             }
         });
     }
-    createAnimations(){
+    createAnimations() {
         this.assets.forEach(asset => {
             if (asset.type === 'spriteSheet') {
                 this.anims.create({
                     key: asset.key,
-                    frames: this.anims.generateFrameNumbers(asset.key, {start: asset.start, end: asset.end}),
+                    frames: this.anims.generateFrameNumbers(asset.key, {
+                        start: asset.start,
+                        end: asset.end
+                    }),
                     frameRate: asset.frameRate,
                     repeat: asset.repeat
                 });
@@ -174,110 +371,112 @@ export default class GameScene extends Phaser.Scene {
         });
     }
 
-    setupGraphics(){
-        this.add.image(0, 0, 'background').setOrigin(0, 0).setDisplaySize(WIDTH, HEIGHT/2).setDepth(0);
+    setupGraphics() {
+        this.add.image(0, 0, 'background').setOrigin(0, 0).setDisplaySize(WIDTH, HEIGHT / 2).setDepth(0);
         this.info = this.add.graphics().setDepth(3);
         this.graphics = this.add.graphics().setDepth(1);
         this.loadingScreen = this.add.graphics().setDepth(10);
     }
 
-    setupHUD(){
-        const DASHBOARD_HEIGHT = HEIGHT/10;
+    setupHUD() {
+        const DASHBOARD_HEIGHT = HEIGHT / 10;
 
         this.info.clear();
-        createGradientShape(this, WIDTH/2, DASHBOARD_HEIGHT/2, WIDTH, DASHBOARD_HEIGHT, COLORS.gradient1,  COLORS.gradient2, 'rectangle');
-        this.info.lineStyle(WIDTH/150,COLORS.hudOutline, 1);
+        createGradientShape(this, WIDTH / 2, DASHBOARD_HEIGHT / 2, WIDTH, DASHBOARD_HEIGHT, COLORS.gradient1, COLORS.gradient2, 'rectangle');
+        this.info.lineStyle(WIDTH / 150, COLORS.hudOutline, 1);
         this.info.strokeRect(0, 0, WIDTH, DASHBOARD_HEIGHT);
         this.info.lineStyle(0);
-        createGradientShape(this, 0, 0, DASHBOARD_HEIGHT*4, DASHBOARD_HEIGHT*4, COLORS.gradient1,  COLORS.gradient2, 'circle');
-        createGradientShape(this, WIDTH, 0, DASHBOARD_HEIGHT*4, DASHBOARD_HEIGHT*4, COLORS.gradient1,  COLORS.gradient2,'circle');
-        this.info.lineStyle(WIDTH/150,COLORS.hudOutline, 1);
-        this.info.strokeCircle(0, 0, DASHBOARD_HEIGHT*2);
-        this.info.strokeCircle(WIDTH, 0, DASHBOARD_HEIGHT*2);
+        createGradientShape(this, 0, 0, DASHBOARD_HEIGHT * 4, DASHBOARD_HEIGHT * 4, COLORS.gradient1, COLORS.gradient2, 'circle');
+        createGradientShape(this, WIDTH, 0, DASHBOARD_HEIGHT * 4, DASHBOARD_HEIGHT * 4, COLORS.gradient1, COLORS.gradient2, 'circle');
+        this.info.lineStyle(WIDTH / 150, COLORS.hudOutline, 1);
+        this.info.strokeCircle(0, 0, DASHBOARD_HEIGHT * 2);
+        this.info.strokeCircle(WIDTH, 0, DASHBOARD_HEIGHT * 2);
 
         this.speedText = this.add.text(10, DASHBOARD_HEIGHT / 2, Math.trunc(speed) + " km/h", {
             fontSize: `${DASHBOARD_HEIGHT/3}px`,
             fill: COLORS.textColor,
         }).setOrigin(-0.2, 0).setDepth(4);
 
-        this.healthText = this.add.text(DASHBOARD_HEIGHT*2 + 10, DASHBOARD_HEIGHT / 2, "Health: 100%", {
+        this.healthText = this.add.text(DASHBOARD_HEIGHT * 2 + 10, DASHBOARD_HEIGHT / 2, "Health: 100%", {
             fontSize: `${WIDTH/50}px`,
             fill: COLORS.textColor,
-        }).setOrigin(0,0.5).setDepth(4);
+        }).setOrigin(0, 0.5).setDepth(4);
 
-        this.timeText = this.add.text(WIDTH/2, DASHBOARD_HEIGHT / 2, "Time: " + this.timer + "s", {
+        this.levelText = this.add.text(WIDTH / 2, DASHBOARD_HEIGHT / 2, "Time: " + this.timer + "s", {
             fontSize: `${WIDTH/50}px`,
             fill: COLORS.textColor,
-        }).setOrigin(0.5,0.5).setDepth(4);
+        }).setOrigin(0.5, 0.5).setDepth(4);
 
-        this.distanceText = this.add.text(WIDTH - DASHBOARD_HEIGHT*2 - 10, DASHBOARD_HEIGHT / 2, "Distance: 0m", {
+        this.distanceText = this.add.text(WIDTH - DASHBOARD_HEIGHT * 2 - 10, DASHBOARD_HEIGHT / 2, "Distance: 0m", {
             fontSize: `${WIDTH/50}px`,
             fill: COLORS.textColor,
-        }).setOrigin(1,0.5).setDepth(4);
+        }).setOrigin(1, 0.5).setDepth(4);
 
-        this.levelText = this.add.text(WIDTH - 10, DASHBOARD_HEIGHT / 2, "Level: 1", {
+        this.timeText = this.add.text(WIDTH - 10, DASHBOARD_HEIGHT / 2, "Level: 1", {
             fontSize: `${DASHBOARD_HEIGHT/3}px`,
             fill: COLORS.textColor,
-        }).setOrigin(1,0.5).setDepth(4);
+        }).setOrigin(1, 0).setDepth(4);
     }
 
-    updateHUD(){
+    updateHUD() {
         // TODO: Update the HUD elements
-        let speed = (animationSpeed/2.75)*120; // Convert the speed to km/h
+        let speed = (animationSpeed / 2.75) * 120; // Convert the speed to km/h
         this.speedText.setText(Math.trunc(speed) + "\nkm/h");
-        this.healthText.setText("Health:" + this.player.getData('health') + "%");
-        this.timeText.setText("Time: " + this.timer + "s");
-        this.distanceText.setText("Distance: " + Math.round(elapsedDistance * 100)/100 + "Km");
-        this.levelText.setText("Level: 1");
+        this.healthText.setText("❤: " + this.player.getData('health') + "%");
+        this.levelText.setText("Level: " + this.currentLevel.level);
+        this.distanceText.setText("🛣: "+Math.round(elapsedDistance * 100) / 100 + "Km");
+        this.timeText.setText("⏲:" + this.timer + "s");
     }
 
-    setupFinishLine(){
-        let finishLineY = HEIGHT - HEIGHT/3
+    setupFinishLine() {
+        let finishLineY = HEIGHT - HEIGHT / 3
         this.finishLine = this.add.tileSprite(
-            WIDTH/2,
+            WIDTH / 2,
             finishLineY,
-            2* (WIDTH/8),
-            HEIGHT/50,
+            2 * (WIDTH / 8),
+            HEIGHT / 50,
             'finish'
         ).setDepth(0);
         this.finishLine.tileScaleX = 0.1;
         this.finishLine.tileScaleY = 0.1;
-        this.poleLeft = this.add.rectangle(WIDTH/2 - WIDTH/8, finishLineY  , 2, 4*HEIGHT/50, COLORS.poleColor).setDepth(0).setOrigin(0.5, 0);
-        this.poleRight = this.add.rectangle(WIDTH/2 + WIDTH/8, finishLineY, 2, 4*HEIGHT/50, COLORS.poleColor).setDepth(0).setOrigin(0.5, 0);
+        this.poleLeft = this.add.rectangle(WIDTH / 2 - WIDTH / 8, finishLineY, 2, 4 * HEIGHT / 50, COLORS.poleColor).setDepth(0).setOrigin(0.5, 0);
+        this.poleRight = this.add.rectangle(WIDTH / 2 + WIDTH / 8, finishLineY, 2, 4 * HEIGHT / 50, COLORS.poleColor).setDepth(0).setOrigin(0.5, 0);
     }
 
-    moveFinishLine(){
+    moveFinishLine() {
+        win = true;
+        this.finishLine.id = 'finishLine';
         this.tweens.add({
             targets: [this.poleLeft, this.poleRight],
-            y: HEIGHT/2 - HEIGHT/10 + this.finishLine.height/2,
+            y: HEIGHT / 2 - HEIGHT / 10 + this.finishLine.height / 2,
             duration: 2500,
             onUpdate: (tween) => {
                 this.finishLine.y = this.poleLeft.y;
             },
-            onComplete: () =>{
+            onComplete: () => {
                 this.finishLine.setDepth(10);
                 this.poleLeft.setDepth(10);
                 this.poleRight.setDepth(10);
                 this.tweens.add({
                     targets: this.finishLine,
-                    y: HEIGHT - this.player.height*4,
-                    height: this.player.height*this.player.scale,
-                    width: WIDTH - bottomWidth/2,
+                    y: HEIGHT - this.player.height * 4,
+                    height: this.player.height * this.player.scale,
+                    width: WIDTH - bottomWidth / 2,
                     tileScaleX: 0.3,
                     tileScaleY: 0.3,
                     duration: 3000,
                     onUpdate: (tween) => {
                         this.poleLeft.y = this.finishLine.y;
                         this.poleRight.y = this.finishLine.y;
-                        this.poleLeft.x = this.finishLine.x - this.finishLine.width/2;
-                        this.poleRight.x = this.finishLine.x + this.finishLine.width/2;
+                        this.poleLeft.x = this.finishLine.x - this.finishLine.width / 2;
+                        this.poleRight.x = this.finishLine.x + this.finishLine.width / 2;
 
-                        this.poleLeft.height = tween.progress * this.player.height*5*this.player.scale;
-                        this.poleRight.height = tween.progress * this.player.height*5*this.player.scale;
+                        this.poleLeft.height = tween.progress * this.player.height * 5 * this.player.scale;
+                        this.poleRight.height = tween.progress * this.player.height * 5 * this.player.scale;
 
-                        this.poleRight.width = tween.progress * (this.player.width/20)*this.player.scale;
-                        this.poleLeft.width = tween.progress * (this.player.width/20)*this.player.scale;
-                        },
+                        this.poleRight.width = tween.progress * (this.player.width / 20) * this.player.scale;
+                        this.poleLeft.width = tween.progress * (this.player.width / 20) * this.player.scale;
+                    },
                     onComplete: () => {
                         greenLight = false;
                         this.stopTimer();
@@ -302,7 +501,6 @@ export default class GameScene extends Phaser.Scene {
                                     alpha: 1,
                                     duration: 1000,
                                     onComplete: () => {
-                                        win = true;
                                         const dataToPass = {
                                             level: this.currentLevel.level,
                                             difficulty: this.currentLevel.dificulty,
@@ -310,6 +508,7 @@ export default class GameScene extends Phaser.Scene {
 
                                         }
                                         const viewStore = useViewStore();
+                                        localStorage.setItem('playedLevels', JSON.stringify(Array.from(playedLevels.entries())));
                                         viewStore.setSceneData(dataToPass); // Store the data to pass to the next scene
                                         viewStore.setView('victory'); // Trigger a transition to Victory view
                                     }
@@ -324,13 +523,19 @@ export default class GameScene extends Phaser.Scene {
         })
     }
 
+    endOfGame() {
+        if(elapsedDistance >= this.currentLevel.roadLength && !win){
+            this.moveFinishLine();
+        }
+    }
+
     setupPlayer() {
         if (this.player) {
             this.player.destroy();
         }
 
-        this.player = this.physics.add.sprite(WIDTH/2, HEIGHT - HEIGHT/15, 'frontCar')
-            .setScale(1)  // Start with default scale
+        this.player = this.physics.add.sprite(WIDTH / 2, HEIGHT - HEIGHT / 15, 'frontCar')
+            .setScale(1) // Start with default scale
             .setDepth(1);
 
         this.player.anims.play('frontCar', true);
@@ -341,45 +546,46 @@ export default class GameScene extends Phaser.Scene {
     }
 
 
-    updatePlayerCollider(){
+    updatePlayerCollider() {
         this.player.body.setSize(this.player.width * 0.95, this.player.height * 0.6);
     }
 
 
-    setupEnemies(){
+    setupEnemies() {
         let enemyX = 0;
-        this.currentLevel.difficultyVersions[0].enemies.forEach(enemy => {
+        this.currentLevel.difficultyVersions[1].enemies.forEach(enemy => {
             let animationKey = null;
             switch (enemy.startPosition) {
                 case 'left':
-                    enemyX = WIDTH/2 - topWidth/3;
+                    enemyX = WIDTH / 2 - topWidth / 3;
                     animationKey = getRandomItem(CAR_RIGHT);
                     break;
                 case 'middle':
-                    enemyX = WIDTH/2;
+                    enemyX = WIDTH / 2;
                     animationKey = getRandomItem(CAR_COLORS);
                     break;
                 case 'right':
-                    enemyX = WIDTH/2 + topWidth/3;
+                    enemyX = WIDTH / 2 + topWidth / 3;
                     animationKey = getRandomItem(CAR_LEFT);
                     break;
             }
-            let newEnemy = this.physics.add.sprite(enemyX, HEIGHT/2, 'whiteFront').setScale(0).setDepth(2).setOrigin(0.5, 1);
-            newEnemy.x = enemyX;        // LS
+            let newEnemy = this.physics.add.sprite(enemyX, HEIGHT / 2, 'whiteFront').setScale(0).setDepth(2).setOrigin(0.5, 1);
+            newEnemy.x = enemyX; // LS
             newEnemy.startPosition = enemy.startPosition;
             newEnemy.anims.play(animationKey, true);
             newEnemy.body.setSize(newEnemy.width * 0.95, newEnemy.height * 0.6);
             newEnemy.body.setOffset(0, newEnemy.height * 0.3);
             newEnemy.setData('appearanceTime', enemy.appearanceTime);
-            newEnemy.setData('onScreen',false);
+            newEnemy.setData('onScreen', false);
             newEnemy.setData('collided', false);
             this.physics.add.overlap(this.player, newEnemy, this.handleCollision, null, this);
 
 
-            this.sceneEnemies.push(newEnemy);  // Add the enemy to the sceneEnemies array
+            this.sceneEnemies.push(newEnemy); // Add the enemy to the sceneEnemies array
             // SAVE ENEMY X FROM ARRAY TO LS
         });
     }
+
 
     handleCollision(player, enemy) {
 
@@ -390,43 +596,43 @@ export default class GameScene extends Phaser.Scene {
         enemy.setData('collided', true);
 
         speed /= 2;
-        this.moveFinishLine();
         this.player.setData('health', this.player.getData('health') - this.currentLevel.enemyDamage); // Decrease the player's health
         this.physics.world.removeCollider(enemy); // Remove the collider to prevent multiple collisions
 
-        let explosion = this.add.sprite(enemy.x, enemy.y, 'explosion').setScale((this.player.width*this.player.scale)/48).setDepth(2);
+        let explosion = this.add.sprite(enemy.x, enemy.y, 'explosion').setScale((this.player.width * this.player.scale) / 48).setDepth(2);
         explosion.anims.play('explosion', true);
 
         explosion.once('animationcomplete', () => {
             explosion.destroy(); // Destroy the explosion sprite
-            enemy.destroy();     // Destroy the enemy
+            //enemy.destroy(); // Destroy the enemy
         });
         enemy.setVisible(false);
     }
 
-    spawnEnemy(enemyID){
-        if(enemyID >= this.sceneEnemies.length)
+    spawnEnemy(enemyID) {
+        if (enemyID >= this.sceneEnemies.length)
             return;
 
         let enemy = this.sceneEnemies[enemyID];
-        console.log(enemy.getData('appearanceTime') + " " + Math.round(elapsedDistance * 100)/100);
-        if(enemy.getData('appearanceTime') <= Math.round(elapsedDistance * 100)/100 && enemy.getData('onScreen') === false){
-           enemy.setData('onScreen', true);
-          spawnedEnemies++;
-           this.tweens.add({
-               targets: enemy,
-               y: HEIGHT/2,
-               scale: (topWidth/5)/32,
-               duration: 1500,
-               onComplete: () => {
-                   this.moveEnemy(enemy);
-               }
-           });
-       }
+        enemy.id = 'enemy' + enemyID;
+        console.log(enemy.getData('appearanceTime') + " " + Math.round(elapsedDistance * 100) / 100);
+        if (enemy.getData('appearanceTime') <= Math.round(elapsedDistance * 100) / 100 && enemy.getData('onScreen') === false) {
+            enemy.setData('onScreen', true);
+            spawnedEnemies++;
+            this.tweens.add({
+                targets: enemy,
+                y: HEIGHT / 2,
+                scale: (topWidth / 5) / 32,
+                duration: 1500,
+                onComplete: () => {
+                    this.moveEnemy(enemy);
+                }
+            });
+        }
     }
 
-    moveEnemy(enemy){
-        if(enemy) {
+    moveEnemy(enemy) {
+        if (enemy) {
             let direction = 0
             let duration = 5000;
             let initialScale = enemy.scale;
@@ -453,6 +659,9 @@ export default class GameScene extends Phaser.Scene {
                 duration: duration,
                 onUpdate: (tween) => {
                     enemy.scale = Phaser.Math.Linear(initialScale, this.player.scale + 1, tween.progress);
+                },
+                onComplete: () => {
+                    enemy.setData('onScreen', false);
                 }
             });
         }
@@ -460,7 +669,7 @@ export default class GameScene extends Phaser.Scene {
 
 
 
-    roadMovement(delta){
+    roadMovement(delta) {
         const halfWidth = WIDTH / 2;
         const halfHeight = HEIGHT / 2;
         let roadMaxWidth = 0;
@@ -478,11 +687,11 @@ export default class GameScene extends Phaser.Scene {
 
             // Draw top grass
             graphics.fillStyle(COLORS.grassColor1, 1);
-            graphics.fillRect(0,halfHeight, WIDTH, HEIGHT);
+            graphics.fillRect(0, halfHeight, WIDTH, HEIGHT);
             //draw top road trapzoid
-            drawPolygon(graphics, halfWidth - WIDTH/10, halfWidth + WIDTH/10, halfWidth + WIDTH/10 + lines[0], halfWidth + WIDTH/10 + lines[0], halfHeight, halfHeight+lines[0], topRoadColor);
-            drawPolygon(graphics, halfWidth - WIDTH/8, halfWidth - WIDTH/8 - 2, halfWidth - WIDTH/8 - 2 - lines[0], halfWidth - WIDTH/8 - lines[0], halfHeight, halfHeight + lines[0], COLORS.rumbleColor1);
-            drawPolygon(graphics, halfWidth + WIDTH/8, halfWidth + WIDTH/8 + 2, halfWidth + WIDTH/8 + 2 +  lines[0],  halfWidth + WIDTH/8 +  lines[0], halfHeight, halfHeight + lines[0], COLORS.rumbleColor1);
+            drawPolygon(graphics, halfWidth - WIDTH / 10, halfWidth + WIDTH / 10, halfWidth + WIDTH / 10 + lines[0], halfWidth + WIDTH / 10 + lines[0], halfHeight, halfHeight + lines[0], topRoadColor);
+            drawPolygon(graphics, halfWidth - WIDTH / 8, halfWidth - WIDTH / 8 - 2, halfWidth - WIDTH / 8 - 2 - lines[0], halfWidth - WIDTH / 8 - lines[0], halfHeight, halfHeight + lines[0], COLORS.rumbleColor1);
+            drawPolygon(graphics, halfWidth + WIDTH / 8, halfWidth + WIDTH / 8 + 2, halfWidth + WIDTH / 8 + 2 + lines[0], halfWidth + WIDTH / 8 + lines[0], halfHeight, halfHeight + lines[0], COLORS.rumbleColor1);
         }
 
         // Draw road segments
@@ -494,7 +703,6 @@ export default class GameScene extends Phaser.Scene {
             //get width of road on y on which is player
             if (this.player.y < halfHeight + lines[i + 1] && this.player.y > halfHeight + lines[i]) {
                 playerRoadWidth = x1;
-                console.log(playerRoadWidth);
             }
 
 
@@ -550,10 +758,17 @@ export default class GameScene extends Phaser.Scene {
                 callback: () => {
                     removeLoading(this);
                     startGame = true;
+                    this.lakitu.id = 'lakitu';
                     this.tweens.add({
                         targets: this.lakitu,
-                        x: { value: WIDTH / 3, ease: 'Cosine.easeInOut' },
-                        y: { value: WIDTH/6 + WIDTH/14, ease: 'Cubic.easeOut' },
+                        x: {
+                            value: WIDTH / 3,
+                            ease: 'Cosine.easeInOut'
+                        },
+                        y: {
+                            value: WIDTH / 6 + WIDTH / 14,
+                            ease: 'Cubic.easeOut'
+                        },
                         scale: (HEIGHT / 4) / 410,
                         duration: 1500,
                         loop: false,
@@ -565,8 +780,14 @@ export default class GameScene extends Phaser.Scene {
                                 greenLight = true;
                                 this.tweens.add({
                                     targets: this.lakitu,
-                                    x: { value: WIDTH, ease: 'Cubic.easeIn' },
-                                    y: { value: 0, ease: 'Cosine.easeOut' },
+                                    x: {
+                                        value: WIDTH,
+                                        ease: 'Cubic.easeIn'
+                                    },
+                                    y: {
+                                        value: 0,
+                                        ease: 'Cosine.easeOut'
+                                    },
                                     scale: 0,
                                     duration: 1500,
                                     onComplete: () => {
@@ -581,20 +802,20 @@ export default class GameScene extends Phaser.Scene {
             });
         }
     }
-    racePreparations(){
+    racePreparations() {
         if (greenLight) {
-           if(speed < this.currentLevel.speed){
-              this.addSpeed();
-           }
+            if (speed < this.currentLevel.speed) {
+                this.addSpeed();
+            }
             this.startTimer();
-            elapsedDistance =( ((speed/2.75)*120) / 3600 ) * this.timer;
+            elapsedDistance = (((speed / 2.75) * 120) / 3600) * this.timer;
             this.spawnEnemy(spawnedEnemies);
         }
     }
 
 
 
-    startTimer(){
+    startTimer() {
         if (!this.timerEvent) {
             this.timerEvent = this.time.addEvent({
                 delay: 1000,
@@ -614,13 +835,29 @@ export default class GameScene extends Phaser.Scene {
         }
     }
 
-    getLevel(){
-        levels = this.cache.json.get('levels');
 
-        this.currentLevel = levels.levels[0];   //TODO add random level selection, and dificulty...and make sure im not repeating levels i played before. LocalStorage?
+    getLevel() {
+        levels = this.cache.json.get('levels');
+        // Determine the level index
+        let levelIndex = playedLevels.size - 1 < levels.levels.length ? playedLevels.size : getRandomNumber(0, levels.levels.length - 1);
+
+// Randomly select a difficulty index that hasn't been played for this level
+        let difficultyIndex = 0;
+        do {
+            difficultyIndex = getRandomNumber(0, 2);
+        } while (playedLevels.get(levelIndex) === difficultyIndex);
+
+// Store the new played level and difficulty version
+        playedLevels.set(levelIndex, difficultyIndex);
+        console.log(difficultyIndex);
+        localStorage.setItem('playedLevels', JSON.stringify(Array.from(playedLevels.entries())));
+
+
+        this.currentLevel = levels.levels[levelIndex]; //TODO add random level selection, and dificulty...and make sure im not repeating levels i played before. LocalStorage?
+        console.log(this.currentLevel);
         this.dificulty = this.currentLevel.difficulty;
 
-        this.currentLevel.difficultyVersions[0].enemies.forEach(enemy => {
+        this.currentLevel.difficultyVersions[difficultyIndex].enemies.forEach(enemy => {
             // Example: Place enemies at their positions based on the data as a red circle
             console.log(`Enemy at ${enemy.startPosition}, appearing at ${enemy.appearanceTime}`);
         });
@@ -628,15 +865,15 @@ export default class GameScene extends Phaser.Scene {
     gyroscopeMovement() {
         if (this.gyroData) {
             // Map beta (tilt forward/back) to vertical movement
-            this.player.x+= this.gyroData.beta * 0.1;
+            this.player.x += this.gyroData.beta * 0.1;
 
             // Map gamma (tilt left/right) to horizontal movement
         }
     }
     handleOrientation(event) {
-        const angle = window.screen.orientation
-            ? window.screen.orientation.angle
-            : window.orientation || 0;
+        const angle = window.screen.orientation ?
+            window.screen.orientation.angle :
+            window.orientation || 0;
 
         let beta = event.beta; // Front-to-back tilt (rotation around the X-axis)
 
@@ -646,13 +883,15 @@ export default class GameScene extends Phaser.Scene {
             beta = event.beta;
         } else if (angle === -90) {
             // Landscape mode (rotated left)
-            beta = - event.beta;
+            beta = -event.beta;
         }
         // Update the gyroData object with the corrected beta value
         this.gyroData.beta = beta;
     }
     setupKeyboard() {
-        this.gyroData = { beta: 0 };
+        this.gyroData = {
+            beta: 0
+        };
         // Input tracking
         this.cursors = this.input.keyboard.createCursorKeys();
         this.lastKeyboardInput = 0;
@@ -660,7 +899,10 @@ export default class GameScene extends Phaser.Scene {
 
         this.input.on('pointermove', (pointer) => {
             this.lastMouseInput = this.time.now;
-            this.mouseTarget = { x: pointer.x, y: pointer.y };
+            this.mouseTarget = {
+                x: pointer.x,
+                y: pointer.y
+            };
         });
 
         this.input.keyboard.on('keydown', () => {
@@ -679,15 +921,16 @@ export default class GameScene extends Phaser.Scene {
         const now = this.time.now;
         let isUsingMouse = false; // Last mouse input within 300ms
 
-        if(now - this.lastMouseInput < now - this.lastKeyboardInput){
+        if (now - this.lastMouseInput < now - this.lastKeyboardInput) {
             isUsingMouse = true;
         } else {
             isUsingMouse = false;
         }
 
         // Base speed calculation
-        const baseSpeed = WIDTH / 800;
-        let steerSpeed = baseSpeed * animationSpeed;
+        const baseSpeed = WIDTH / 400;
+        let steerSpeed = baseSpeed  * animationSpeed/2;
+
 
         // Mouse movement logic
         if (isUsingMouse) {
@@ -700,7 +943,13 @@ export default class GameScene extends Phaser.Scene {
                 this.player.x -= steerSpeed;
                 this.player.anims.play('carLeft', true);
             } else {
-                this.player.anims.play('frontCar', true);
+                if (this.player.x >= WIDTH / 2 + WIDTH / 10) {
+                    this.player.anims.play('redSLeft', true);
+                } else if (this.player.x <= WIDTH / 2 - WIDTH / 10) {
+                    this.player.anims.play('redSRight', true);
+                } else {
+                    this.player.anims.play('frontCar', true);
+                }
             }
 
             this.updatePlayerCollider();
@@ -730,8 +979,8 @@ export default class GameScene extends Phaser.Scene {
         }
 
         // Prevent the player from going out of bounds
-        const leftLimit = WIDTH/2 - playerRoadWidth ;
-        const rightLimit = WIDTH/2 + playerRoadWidth ;
+        const leftLimit = WIDTH / 2 - playerRoadWidth;
+        const rightLimit = WIDTH / 2 + playerRoadWidth;
 
         if (this.player.x < leftLimit) {
             this.player.x = leftLimit;
@@ -756,7 +1005,7 @@ export default class GameScene extends Phaser.Scene {
         if (speed !== this.currentLevel.speed) {
             let startTime = Date.now(); // Record start time
             let currentSpeed = speed; // Store the initial speed
-            let duration = 3000; // Time to reach the desired speed in milliseconds
+            let duration = 1500; // Time to reach the desired speed in milliseconds
 
             const updateSpeed = () => {
                 let elapsed = Date.now() - startTime; // Calculate elapsed time
@@ -801,26 +1050,26 @@ export default class GameScene extends Phaser.Scene {
 
     resetGameState() {
         // Properly clean up input before reset
-        this.shutdown();
+        // Stop all running tweens
+        this.tweens.killAll();
 
-        // Reset all other game state
-        this.initializeVariables();
-        this.children.removeAll(true);
-
+        // Clear graphics
         if (this.graphics) this.graphics.clear();
         if (this.info) this.info.clear();
         if (this.loadingScreen) this.loadingScreen.clear();
 
+        // Remove all game objects
+        this.children.removeAll(true);
+
+        // Clear physics
         if (this.physics.world) {
             this.physics.world.colliders.destroy();
         }
 
-        if (this.tweens) {
-            this.tweens.killAll();
-        }
-
-        // Restart scene which will trigger create() again
-        this.scene.restart();
+        // Initialize core graphics before loading state
+        this.loadingScreen = this.add.graphics().setDepth(10);
+        this.graphics = this.add.graphics().setDepth(1);
+        this.info = this.add.graphics().setDepth(3);
     }
 
 }
@@ -828,10 +1077,10 @@ export default class GameScene extends Phaser.Scene {
 function drawPolygon(graphics, x1, x2, x3, x4, y1, y2, color) {
     graphics.fillStyle(color, 1);
     graphics.beginPath();
-    graphics.moveTo(x1,y1);
-    graphics.lineTo(x2,y1);
-    graphics.lineTo(x3,y2);
-    graphics.lineTo(x4,y2);
+    graphics.moveTo(x1, y1);
+    graphics.lineTo(x2, y1);
+    graphics.lineTo(x3, y2);
+    graphics.lineTo(x4, y2);
     graphics.closePath();
     graphics.fillPath();
 }
@@ -847,16 +1096,18 @@ function drawLoading(scene, time, dots) {
             fill: '#FFFFFF'
         }).setOrigin(0.5).setDepth(11);
     } else {
-        scene.loadingText.setText("Loading" + dots);
+        if (scene.loadingText)
+            scene.loadingText.setText("Loading" + dots);
     }
 }
 
 function removeLoading(scene) {
-    scene.loadingScreen.clear();
-    scene.loadingText.destroy();
+    scene.loadingScreen.alpha = 0;
+    scene.loadingText.alpha = 0;
 }
 
 let gradientCounter = 0;
+
 function createGradientShape(scene, x, y, width, height, color1, color2, shape = 'circle') {
     const uniqueKey = `gradientShape_${gradientCounter++}`; // Generate a unique key
 
@@ -865,12 +1116,12 @@ function createGradientShape(scene, x, y, width, height, color1, color2, shape =
     const gradientCtx = gradientCanvas.context;
 
     // Create the gradient
-    const gradient = shape === 'circle'
-        ? gradientCtx.createRadialGradient(
+    const gradient = shape === 'circle' ?
+        gradientCtx.createRadialGradient(
             width / 2, height / 2, 0, // Inner circle (center, 0 radius)
             width / 2, height / 2, Math.min(width, height) / 2 // Outer circle (center, full radius)
-        )
-        : gradientCtx.createLinearGradient(0, 0, 0, height); // Horizontal gradient for rectangle
+        ) :
+        gradientCtx.createLinearGradient(0, 0, 0, height); // Horizontal gradient for rectangle
 
     gradient.addColorStop(0, color1);
     gradient.addColorStop(1, color2);
@@ -903,5 +1154,283 @@ function getRandomItem(array) {
     return array[randomIndex];
 }
 
+function getRandomNumber(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function saveGameState(scene) {
+    // Save all global variables and scene state
+    const gameState = {
+        globalVars: {
+            lines: [...lines],
+            colors: [...colors],
+            numLines,
+            count,
+            isGrey,
+            animationSpeed,
+            speed,
+            startGame,
+            greenLight,
+            elapsedDistance,
+            spawnedEnemies,
+            bottomWidth,
+            playerRoadWidth,
+            win,
+            playedLevels,
+            timer: scene.timer || 0
+        },
+        player: scene.player ? {
+            x: scene.player.x,
+            y: scene.player.y,
+            scale: scene.player.scale,
+            health: scene.player.getData('health'),
+            texture: scene.player.texture.key,
+            frame: scene.player.frame.name,
+            currentAnim: scene.player.anims?.currentAnim?.key || 'frontCar'
+        } : null,
+        enemies: scene.sceneEnemies.map(enemy => ({
+            x: enemy.x,
+            y: enemy.y,
+            scale: enemy.scale,
+            texture: enemy.texture.key,
+            frame: enemy.frame.name,
+            startPosition: enemy.startPosition,
+            onScreen: enemy.getData('onScreen'),
+            collided: enemy.getData('collided'),
+            appearanceTime: enemy.getData('appearanceTime'),
+            currentAnim: enemy.anims?.currentAnim?.key || 'frontCar'
+        })),
+        tweens: (scene.tweens?.getTweens() || []).map(tween => ({
+            targets: Array.isArray(tween.targets) ? tween.targets.map(target => target?.id || null) : [tween.targets?.id || null],
+            duration: tween.duration,
+            elapsed: tween.elapsed,
+            progress: tween.progress,
+            data: tween.data.map(d => ({
+                key: d.key,
+                start: d.start,
+                end: d.end,
+                current: tween.targets[0]?.[d.key] || d.start
+            })),
+            totalElapsed: tween.totalElapsed,
+            totalProgress: tween.totalProgress,
+            ease: tween.ease,
+            delay: tween.delay,
+            repeat: tween.repeat,
+            yoyo: tween.yoyo
+        })),
+        currentLevel: scene.currentLevel,
+        lakitu: scene.lakitu ? {
+            x: scene.lakitu.x,
+            y: scene.lakitu.y,
+            scale: scene.lakitu.scale,
+            alpha: scene.lakitu.alpha,
+            visible: scene.lakitu.visible,
+            currentAnim: scene.lakitu?.anims?.currentAnim?.key || 'lakituStart',
+            isExiting: scene.lakitu.x > WIDTH / 2
+        } : null,
+        finishLine: scene.finishLine ? {
+            x: scene.finishLine.x,
+            y: scene.finishLine.y,
+            width: scene.finishLine.width,
+            height: scene.finishLine.height,
+            tileScaleX: scene.finishLine.tileScaleX,
+            tileScaleY: scene.finishLine.tileScaleY
+        } : null
+    };
+
+    localStorage.setItem('gameState', JSON.stringify(gameState));
+    console.log('Game state saved:', gameState);
+}
+
+function resumeGameState(scene) {
+    const savedState = JSON.parse(localStorage.getItem('gameState'));
+    if (!savedState) {
+        console.warn('No saved state found');
+        return;
+    }
+
+    // Reset the current scene state
+    scene.resetGameState();
+
+    // Restore global variables
+    Object.assign(window, savedState.globalVars);
+    scene.timer = savedState.globalVars.timer;
+
+    // Create graphics objects with correct depth
+    scene.setupGraphics();
+
+    // Restore current level
+    scene.currentLevel = savedState.currentLevel;
+
+    // Restore player with correct position and origin
+    if (savedState.player) {
+        scene.player = scene.physics.add.sprite(
+            savedState.player.x,
+            savedState.player.y,
+            savedState.player.texture
+        ).setDepth(2);
+
+        // Set the correct origin before setting scale
+        scene.player.setOrigin(0.5, 1);
+
+        // Set scale after origin is set
+        scene.player.setScale(savedState.player.scale);
+
+        // Set the exact Y position from saved state
+        scene.player.y = savedState.player.y;
+
+        scene.player.setData('health', savedState.player.health);
+        scene.createAnimations();
+        scene.player.anims.play(savedState.player.currentAnim || 'frontCar', true);
+        scene.player.body.setCollideWorldBounds(true);
+        scene.updatePlayerCollider();
+    }
 
 
+    // Restore enemies with their movement patterns
+    scene.sceneEnemies = [];
+    savedState.enemies.forEach((enemyData, index) => {
+        const enemy = scene.physics.add.sprite(
+            enemyData.x,
+            enemyData.y,
+            enemyData.texture
+        ).setDepth(2).setOrigin(0.5, 1);
+
+        enemy.setScale(enemyData.scale);
+        enemy.startPosition = enemyData.startPosition;
+        enemy.setData('onScreen', enemyData.onScreen);
+        enemy.setData('collided', enemyData.collided);
+        enemy.setData('appearanceTime', enemyData.appearanceTime);
+
+        // Important: Only make the enemy visible if it's supposed to be on screen and not collided
+        enemy.setVisible(!enemyData.collided);
+
+        const defaultAnim = enemyData.startPosition === 'left' ? 'redSRight' :
+            enemyData.startPosition === 'right' ? 'redSLeft' : 'frontCar';
+        enemy.anims.play(enemyData.currentAnim || defaultAnim, true);
+
+        // Only restore movement for visible, non-collided enemies that are on screen
+        if (enemyData.onScreen && !enemyData.collided) {
+            let direction = WIDTH / 2;
+            switch (enemyData.startPosition) {
+                case 'left':
+                    direction = WIDTH / 2 - 2 * bottomWidth;
+                    break;
+                case 'right':
+                    direction = WIDTH / 2 + 2 * bottomWidth;
+                    break;
+            }
+
+            const totalDistance = HEIGHT + 32 * (savedState.player.scale + 1.5) - HEIGHT / 2;
+            const remainingDistance = HEIGHT + 32 * (savedState.player.scale + 1.5) - enemyData.y;
+            const progress = 1 - (remainingDistance / totalDistance);
+            const duration = (5000 / (scene.currentLevel.speed / 2.75)) * (1 - progress);
+
+            scene.tweens.add({
+                targets: enemy,
+                x: direction,
+                y: HEIGHT + 32 * (savedState.player.scale + 1.5),
+                scale: savedState.player.scale + 1,
+                ease: 'Linear',
+                duration: duration,
+                onComplete: () => {
+                    enemy.setData('onScreen', false);
+                }
+            });
+        } else if (!enemyData.onScreen && !enemyData.collided && enemyData.appearanceTime > savedState.globalVars.elapsedDistance) {
+            // Reset enemies that haven't appeared yet
+            enemy.setScale(0);
+            enemy.y = HEIGHT / 2;
+            enemy.x = enemyData.x;
+        }
+
+        if (scene.player) {
+            scene.physics.add.overlap(scene.player, enemy, scene.handleCollision, null, scene);
+        }
+        scene.sceneEnemies.push(enemy);
+    });
+
+    // Adjust spawnedEnemies counter to account for already-spawned enemies
+    spawnedEnemies = savedState.enemies.filter(e => e.onScreen || e.collided).length;
+
+
+
+    // Restore Lakitu with proper animation state
+    if (savedState.lakitu && savedState.lakitu.visible) {
+        scene.lakitu = scene.add.sprite(
+            savedState.lakitu.x,
+            savedState.lakitu.y,
+            'lakituStart'
+        ).setDepth(2);
+        scene.lakitu.setScale(savedState.lakitu.scale);
+        scene.lakitu.setAlpha(savedState.lakitu.alpha);
+
+        if (!savedState.lakitu.isExiting) {
+            // If Lakitu was in entrance animation
+            scene.lakitu.anims.play('lakituStart', true);
+            scene.lakitu.on('animationcomplete', () => {
+                scene.lakitu.anims.stop();
+                greenLight = true;
+                scene.tweens.add({
+                    targets: scene.lakitu,
+                    x: WIDTH,
+                    y: 0,
+                    scale: 0,
+                    duration: 1500,
+                    onComplete: () => scene.lakitu.destroy()
+                });
+            });
+        } else {
+            // If Lakitu was already exiting
+            scene.tweens.add({
+                targets: scene.lakitu,
+                x: WIDTH,
+                y: 0,
+                scale: 0,
+                duration: 1500 * (1 - savedState.lakitu.x / WIDTH),
+                onComplete: () => scene.lakitu.destroy()
+            });
+        }
+    }
+
+    // Restore finish line with proper animation state
+    if (savedState.finishLine) {
+        scene.finishLine = scene.add.tileSprite(
+            savedState.finishLine.x,
+            savedState.finishLine.y,
+            savedState.finishLine.width,
+            savedState.finishLine.height,
+            'finish'
+        ).setDepth(savedState.finishLine.y < HEIGHT / 2 ? 10 : 0);
+        scene.finishLine.tileScaleX = savedState.finishLine.tileScaleX;
+        scene.finishLine.tileScaleY = savedState.finishLine.tileScaleY;
+
+        // If finish line was moving, restore its animation
+        if (savedState.finishLine.y < HEIGHT - scene.player?.height * 4) {
+            const progress = (savedState.finishLine.y - HEIGHT / 2) / (HEIGHT - HEIGHT / 2);
+            const remainingDuration = 3000 * (1 - progress);
+
+            scene.tweens.add({
+                targets: scene.finishLine,
+                y: HEIGHT - scene.player.height * 4,
+                height: scene.player.height * scene.player.scale,
+                width: WIDTH - bottomWidth / 2,
+                tileScaleX: 0.3,
+                tileScaleY: 0.3,
+                duration: remainingDuration,
+                onUpdate: (tween) => {
+                    if (scene.poleLeft && scene.poleRight) {
+                        scene.poleLeft.y = scene.finishLine.y;
+                        scene.poleRight.y = scene.finishLine.y;
+                        scene.poleLeft.x = scene.finishLine.x - scene.finishLine.width / 2;
+                        scene.poleRight.x = scene.finishLine.x + scene.finishLine.width / 2;
+                    }
+                }
+            });
+        }
+    }
+
+    // Setup HUD and controls
+    scene.setupHUD();
+    scene.setupKeyboard();
+}
