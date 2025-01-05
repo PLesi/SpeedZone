@@ -2,6 +2,10 @@
   <div>
     <!-- Hlavné menu -->
     <div v-if="!gameStarted" class="menu">
+      <audio ref="audioMenu" loop autoplay>
+        <source src="/music/audioMenu.mp3" type="audio/mp3" />
+      </audio>
+
       <img class="menuBackground" src="/img/menu.png" alt="Pozadie menu" />
 
       <div class="muteContainer">
@@ -25,7 +29,7 @@
 
       <div v-if="isRulesVisible" class="rulesModal">
         <div class="rulesContent">
-          <h2>Pravidlá hry</h2>
+          <h2><strong>Popis hry</strong></h2>
 
           <p>
             <strong>{{ rules[currentRuleIndex].title }}</strong>
@@ -37,13 +41,22 @@
             <button @click="nextRule" :disabled="currentRuleIndex === rules.length - 1">→</button>
           </div>
 
-          <button @click="closeRules" class="closeButton" id="quitButton">Zatvoriť</button>
+          <div v-if="currentRuleIndex === rules.length - 1">
+            <button @click="printAllRules" class="printButton">
+              <img src="/img/print.png" id="print" alt="Ikona tisku" />
+            </button>
+          </div>
+          <button @click="closeRules" class="closeButton">Zatvoriť</button>
         </div>
       </div>
     </div>
 
     <!-- Herná scéna -->
-    <div v-else ref="gameContainer"></div>
+    <div v-else ref="gameContainer">
+      <audio ref="audioGame" loop autoplay>
+        <source src="/music/audioGame.mp3" type="audio/mp3" />
+      </audio>
+    </div>
   </div>
 </template>
 
@@ -66,21 +79,16 @@ export default {
       currentRuleIndex: 0,
 
       isMuted: false,
+      gameAudio: 0,
 
       rules: [
         {
           title: "Cieľ hry:",
-          content: "Vaším cieľom je prejsť stanovenú vzdialenosť bez straty všetkých životov. Vyhýbajte sa nástrahám, ktoré vám stoja v ceste, a urobte všetko pre to, aby ste zostali čo najdlhšie nažive."
+          content: "Vaším cieľom je prejsť stanovenú vzdialenosť bez straty všetkých životov. Vyhýbajte sa prekážkam, ktoré vám stoja v ceste, a urobte všetko pre to, aby ste zostali čo najdlhšie nažive."
         },
         {
           title: "Ovládanie:",
-          content: `
-      <ul>
-        <li>PC: Používajte šípky doľava a doprava na klávesnici na ovládanie vášho vozidla.</br>
-        <li>Mobil: Nakláňajte zariadenie doľava alebo doprava, aby ste sa vyhli prekážkam.</li>
-        <li>Myš: Pohybujte myšou doľava a doprava pre jednoduché ovládanie.</li>
-      </ul>
-    `
+          content: "●  PC: Na pohyb vášho vozidla používajte šípky doľava a doprava na klávesnici.<br>●  Mobil: Nakláňajte zariadenie doľava alebo doprava, aby ste sa vyhli prekážkam.<br>●  Myš: Pohybujte myšou doľava a doprava pre jednoduché ovládanie.<br>"
         },
         {
           title: "Pravidlá:",
@@ -116,10 +124,9 @@ export default {
       this.isMuted = !this.isMuted;
 
       if (this.isMuted) {
-        // vypnutie zvuku
-
+        this.$refs.audioMenu.pause();
       } else {
-        // zapnutie zvuku
+        this.$refs.audioMenu.play();
       }
     },
 
@@ -142,6 +149,45 @@ export default {
       if (this.currentRuleIndex > 0) {
         this.currentRuleIndex--;
       }
+    },
+    printAllRules() {
+      const printableText = this.rules.map(rule => `
+      <h3>${rule.title}</h3>
+      <div>${rule.content}</div>
+    `).join("<hr>");
+
+      let printWindow = window.open("", "_blank");
+      printWindow.document.write(`
+      <html lang="sk">
+        <head>
+            <title>Pravidlá hry</title>
+            <style>
+              body {
+                font-family: Arial, sans-serif;
+                margin: 20px;
+              }
+              h1 {
+                font-size: 2em;
+                text-align: center;
+                margin-bottom: 50px;
+              }
+              h3 {
+                color: #333;
+              }
+              hr {
+                margin: 30px 0;
+              }
+            </style>
+        </head>
+        <body>
+            <h1>Pravidlá hry</h1>
+            ${printableText}
+        </body>
+      </html>
+    `);
+      printWindow.document.close();
+      printWindow.print();
+      printWindow.close();
     }
   }
 };
@@ -165,7 +211,20 @@ export default {
 }
 </style>
 
+
 <style scoped>
+@font-face {
+  font-family: "PressStart";
+  src: url("/font/PressStart2P-Regular.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+
+* {
+  font-family: "Courier New", Courier, monospace;
+  font-size: 2.2vh;
+}
+
 .menu {
   position: relative;
   width: 100vw;
@@ -183,30 +242,39 @@ export default {
 }
 
 .menuContent {
-  position: relative;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -60%);
   display: flex;
   flex-direction: column;
   gap: 1em;
-  align-items: center;
+  font-family: PressStart, sans-serif;
+  width: max-content;
 }
+
 
 #title {
   width: 20vw;
   height: 40vh;
-  margin-bottom: 30px;
+  margin-bottom: 3vh;
   justify-content: start;
   margin-top: 25px;
 }
+
 .menuButton {
-  font-size: 2.5vh;
+  font-size: 2.2vh;
   background-color: rgba(0, 0, 0, 0.7);
   color: white;
   border: 2px solid #a2d2ff;
   border-radius: 8px;
   box-shadow: 0 0 8px 4px #d7f9f8;
   transition: background-color 0.3s, color 0.3s;
-  width: 13.5vw;
-  height: 7.5vh;
+  padding: 1em 2em;
+  white-space: nowrap;
+  text-align: center;
+  width: 100%;
+  height: auto;
 }
 
 .menuButton:hover {
@@ -225,14 +293,14 @@ export default {
 
 .ruleContainer {
   position: fixed;
-  top: 25px;
-  right: 25px;
+  top: 4vh;
+  right: 2vw;
   z-index: 100;
 }
 
 #ruleButton {
-  width: 50px;
-  height: 50px;
+  width: 3.5vw;
+  height: 7vh;
   transition: transform 0.2s ease;
 }
 
@@ -251,14 +319,16 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
+  font-family: "Courier New", Courier, monospace;
 }
 
 .rulesContent {
-  background:#ffb7c5;
-  padding: 2em;
+  background: #ffb7c5;
+  padding-left: 2.5vw;
+  padding-right: 2.5vw;
   border-radius: 8px;
   width: 45vw;
-  height: 60vh;
+  height: 65vh;
   text-align: center;
   box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.7);
   border: 2px solid white;
@@ -266,25 +336,30 @@ export default {
 }
 
 .rulesContent h2 {
-  font-size: 2.1em;
+  padding-top: 2vh;
+}
+
+h2 strong {
   color: black;
-  padding-bottom: 15px;
+  font-size: 4vh;
 }
 
 p {
   text-align: left;
+  font-size: 2vh;
 }
 
 .rulesContent .text {
   text-align: left;
-  font-size: 1.2em;
+  font-size: 2.2vh;
   color: black;
+  padding-left: 0;
 }
 
 .navigation {
   display: flex;
   justify-content: space-between;
-  bottom: 1em;
+  bottom: 1vh;
   left: 50%;
   gap: 11vw;
   transform: translateX(-50%);
@@ -294,18 +369,35 @@ p {
 
 .closeButton {
   margin-top: 1em;
-  background-color: #f44336;
+  background-color: black;
   color: white;
   border: none;
   border-radius: 5px;
   transform: translateX(-50%);
-  bottom: 5em;
+  bottom: 6vh;
   position: absolute;
+  box-shadow: 0 0 4px 2px #343a40;
 }
 
 .closeButton:hover {
-  background-color: #d32f2f;
+  background-color: #495057;
 }
+
+.printButton {
+  position: absolute;
+  top: 4vh;
+  right: 2vw;
+}
+
+#print {
+  width: 1.7vw;
+  height: 3.7vh;
+}
+
+.printButton:hover {
+  transform: scale(1.1);
+}
+
 
 strong {
   font-weight: bold;
@@ -332,14 +424,14 @@ button {
 
 .muteContainer {
   position: fixed;
-  top: 25px;
-  left: 25px;
+  top: 4vh;
+  left: 2vw;
   z-index: 100;
 }
 
 #muteButton {
-  width: 50px;
-  height: 50px;
+  width: 3.5vw;
+  height: 7vh;
   transition: transform 0.2s ease;
 }
 
@@ -347,6 +439,14 @@ button {
   transform: scale(1.1);
 }
 
+@media (min-width: 550px) and (max-width: 1024px){
+  .rulesContent {
+    width: 60vw;
+    height: 67vh;
+  }
 
-
+  .navigation {
+    gap: 20vw;
+  }
+}
 </style>
