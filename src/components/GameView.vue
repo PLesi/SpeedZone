@@ -10,7 +10,6 @@ import { onMounted, onUnmounted, watch, ref, nextTick } from 'vue';
 import { useViewStore } from '@/../viewStore.js';
 import GameScene from '@/../src/game/scenes/GameScene.js';
 
-
 export default {
   name: 'GameScene',
   setup() {
@@ -30,21 +29,23 @@ export default {
       }
 
       // Reset all global state
-      window.gameState = {
-        lines: [0],
-        colors: [0],
-        numLines: 1,
-        count: 0,
-        isGrey: false,
-        animationSpeed: 1,
-        speed: 0,
-        startGame: false,
-        greenLight: false,
-        levels: null,
-        bottomWidth: 0,
-        elapsedDistance: 0,
-        spawnedEnemies: 0
-      };
+      if (!viewStore.continueGame) {
+        window.gameState = {
+          lines: [0],
+          colors: [0],
+          numLines: 1,
+          count: 0,
+          isGrey: false,
+          animationSpeed: 1,
+          speed: 0,
+          startGame: false,
+          greenLight: false,
+          levels: null,
+          bottomWidth: 0,
+          elapsedDistance: 0,
+          spawnedEnemies: 0,
+        };
+      }
 
       // Force DOM cleanup
       containerKey.value++;
@@ -87,6 +88,7 @@ export default {
         }
       });
     };
+
 
     const destroyPhaser = () => {
       if (!game.value) return;
@@ -176,6 +178,10 @@ export default {
     };
   }
 };
+
+
+
+
 </script>
 
 <style scoped>

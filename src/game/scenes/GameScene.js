@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import {
     useViewStore
 } from '/viewStore.js';
+import app from "@/App.vue";
 
 
 // ak localStorage tak if v ktorom budu kon3tanty a v3etky premenne ktore sa budu ukladat do LS budu mat variable = localStorage.getItem('variable') || default
@@ -20,6 +21,8 @@ const COLORS = {
     poleColor: 0x717171
 };
 
+
+
 const CAR_COLORS = ['whiteFront', 'blueFront', 'pinkFront'];
 const CAR_LEFT = ['whiteSLeft', 'blueSLeft', 'pinkSLeft'];
 const CAR_RIGHT = ['whiteSRight', 'blueSRight', 'pinkSRight'];
@@ -29,6 +32,8 @@ let win = false;
 
 // VARIABLES TO TAKE FROM LS
 let lines = [0];
+let introComplete = false;
+
 let colors = [0];
 let numLines = 1;
 let count = 0;
@@ -51,8 +56,8 @@ if (window.innerHeight > window.innerWidth) {
 }
 const topWidth = WIDTH / 4;
 let bottomWidth = 0;
-let elapsedDistance = 0; // LS
-let spawnedEnemies = 0; // LS
+let elapsedDistance = window.localStorage.getItem('elapsedDistance') || 0;
+let spawnedEnemies = window.localStorage.getItem('spawnedEnemies') || 0;
 
 
 export default class GameScene extends Phaser.Scene {
@@ -73,18 +78,26 @@ export default class GameScene extends Phaser.Scene {
     }
 
     create() {
+        const viewStore = useViewStore();
         // Start fresh
         this.initializeVariables();
+
+
         this.setupGraphics();
         this.setupFinishLine();
         this.createAnimations();
         this.setupPlayer();
         this.player.setScale(1);
         this.getLevel();
+        this.roadMovement(16);
         this.setupEnemies();
         this.setupHUD();
-        this.roadMovement(16);
+
+
         this.setupKeyboard();
+        this.setupFinishLine();
+
+
         // In your create() method:
         const saveButton = this.add.text(100, 50, 'Save Game', {
             fill: '#fff'
@@ -101,6 +114,9 @@ export default class GameScene extends Phaser.Scene {
             .on('pointerdown', () => resumeGameState(this));
 
 
+        window.addEventListener('unload', () => {
+            saveGameState(this);
+        });
 
 
         // Initialize mouse control tracking
@@ -111,15 +127,77 @@ export default class GameScene extends Phaser.Scene {
             this.isMouseActive = true; // Enable mouse control
         });
 
+
+
     }
 
     update(time, delta) {
+        const viewStore = useViewStore();
         this.movement();
         this.gyroscopeMovement();
         this.roadMovement(delta);
         this.racePreparations();
         this.updateHUD();
         this.endOfGame();
+    }
+    showIntroSequence() {
+        introComplete = false;
+        this.lakitu = this.add.sprite(0, HEIGHT, 'lakituStart').setScale(0).setDepth(2);
+        bottomWidth = playerRoadWidth / 5;
+        if (this.player) {
+            this.player.scale = bottomWidth / 53;
+            this.player.originY = 1;
+            this.player.y = HEIGHT / 2 * 2 - this.player.height;
+        }
+        animationSpeed = 0.00007;
+
+        this.time.addEvent({
+            delay: 1000,
+            callback: () => {
+                removeLoading(this);
+                startGame = true;
+                this.lakitu.id = 'lakitu';
+                this.tweens.add({
+                    targets: this.lakitu,
+                    x: {
+                        value: WIDTH / 3,
+                        ease: 'Cosine.easeInOut'
+                    },
+                    y: {
+                        value: WIDTH / 6 + WIDTH / 14,
+                        ease: 'Cubic.easeOut'
+                    },
+                    scale: (HEIGHT / 4) / 410,
+                    duration: 1500,
+                    loop: false,
+                    onComplete: () => {
+                        this.lakitu.anims.play('lakituStart', true);
+                        this.lakitu.on('animationcomplete', () => {
+                            this.lakitu.anims.stop();
+                            greenLight = true;
+                            introComplete = true;
+                            this.tweens.add({
+                                targets: this.lakitu,
+                                x: {
+                                    value: WIDTH,
+                                    ease: 'Cubic.easeIn'
+                                },
+                                y: {
+                                    value: 0,
+                                    ease: 'Cosine.easeOut'
+                                },
+                                scale: 0,
+                                duration: 1500,
+                                onComplete: () => {
+                                    this.lakitu.destroy();
+                                }
+                            });
+                        });
+                    }
+                });
+            },
+            loop: false
+        });
     }
     initializeVariables() {
         // Scene variables
@@ -129,28 +207,50 @@ export default class GameScene extends Phaser.Scene {
         this.sceneEnemies = [];
         this.timerEvent = null;
 
-        // Global variables
-        lines = [0];
-        colors = [0];
-        numLines = 1;
-        count = 0;
-        animationSpeed = 1;
-        speed = 0;
-        isGrey = false;
-        startGame = false;
-        greenLight = false;
-        win = false;
-        elapsedDistance = 0;
-        spawnedEnemies = 0;
-        bottomWidth = 0;
-        playerRoadWidth = 0;
+        const viewStore = useViewStore();
+        const isLoading = viewStore.continueGame;
+
+        // Only reset these if not loading a saved game
+        if (!isLoading) {
+            // Global variables
+            lines = [0];
+            colors = [0];
+            numLines = 1;
+            count = 0;
+            animationSpeed = 1;
+            speed = 0;
+            isGrey = false;
+            startGame = false;
+            greenLight = false;
+            win = false;
+            elapsedDistance = 0;
+            spawnedEnemies = 0;
+            bottomWidth = 0;
+            playerRoadWidth = 0;
+        } else {
+            // Load saved state before starting any timers or calculations
+            elapsedDistance = window.localStorage.getItem('elapsedDistance') || 0;
+        }
 
     }
 
+
     loadAssets() {
-        this.assets = [
-            {key: 'frontCar', path: 'img/frontCar.png', frame: {frameWidth: 50, frameHeight: 33}, type: 'spriteSheet', start: 0, end: 1, frameRate: 10, repeat: -1},
-            {key: 'whiteFront', path: 'img/whiteFront.png',
+        this.assets = [{
+            key: 'frontCar',
+            path: 'img/frontCar.png',
+            frame: {
+                frameWidth: 50,
+                frameHeight: 33
+            },
+            type: 'spriteSheet',
+            start: 0,
+            end: 1,
+            frameRate: 10,
+            repeat: -1
+        }, {
+            key: 'whiteFront',
+            path: 'img/whiteFront.png',
             frame: {
                 frameWidth: 48,
                 frameHeight: 28
@@ -341,6 +441,7 @@ export default class GameScene extends Phaser.Scene {
             path: 'levels.json',
             type: 'json'
         }, ];
+
         this.assets.forEach(asset => {
             switch (asset.type) {
                 case 'spriteSheet':
@@ -424,7 +525,7 @@ export default class GameScene extends Phaser.Scene {
         this.speedText.setText(Math.trunc(speed) + "\nkm/h");
         this.healthText.setText("❤: " + this.player.getData('health') + "%");
         this.levelText.setText("Level: " + this.currentLevel.level);
-        this.distanceText.setText("🛣: "+Math.round(elapsedDistance * 100) / 100 + "Km");
+        this.distanceText.setText("🛣: " + Math.round(elapsedDistance * 100) / 100 + "Km");
         this.timeText.setText("⏲:" + this.timer + "s");
     }
 
@@ -503,7 +604,8 @@ export default class GameScene extends Phaser.Scene {
                                     onComplete: () => {
                                         const dataToPass = {
                                             level: this.currentLevel.level,
-                                            difficulty: this.currentLevel.dificulty,
+                                            difficulty: this.currentLevel.difficulty,
+                                            diffVersion: this.currentLevel.diffIndex + 1,
                                             win: win,
 
                                         }
@@ -524,7 +626,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     endOfGame() {
-        if(elapsedDistance >= this.currentLevel.roadLength && !win){
+        if (elapsedDistance >= this.currentLevel.roadLength && !win) {
             this.moveFinishLine();
         }
     }
@@ -578,6 +680,7 @@ export default class GameScene extends Phaser.Scene {
             newEnemy.setData('appearanceTime', enemy.appearanceTime);
             newEnemy.setData('onScreen', false);
             newEnemy.setData('collided', false);
+            newEnemy.setData('hasSpawned', false);
             this.physics.add.overlap(this.player, newEnemy, this.handleCollision, null, this);
 
 
@@ -595,9 +698,44 @@ export default class GameScene extends Phaser.Scene {
 
         enemy.setData('collided', true);
 
-        speed /= 2;
-        this.player.setData('health', this.player.getData('health') - this.currentLevel.enemyDamage); // Decrease the player's health
-        this.physics.world.removeCollider(enemy); // Remove the collider to prevent multiple collisions
+        // Decrease player health and check for game over
+        const newHealth = this.player.getData('health') - this.currentLevel.enemyDamage;
+        this.player.setData('health', newHealth);
+
+        // Check if player is dead
+        if (newHealth <= 0) {
+            win = false;
+            greenLight = false;
+            this.stopTimer();
+            this.subtractSpeed();
+
+            // Create fade out effect
+            let overlay = this.add.rectangle(0, 0, WIDTH, HEIGHT, 0x000000)
+                .setOrigin(0, 0)
+                .setDepth(10)
+                .setAlpha(0);
+
+            this.tweens.add({
+                targets: overlay,
+                alpha: 1,
+                duration: 1000,
+                onComplete: () => {
+                    const dataToPass = {
+                        level: this.currentLevel.level,
+                        difficulty: this.currentLevel.difficulty,
+                        diffVersion: this.currentLevel.diffIndex + 1,
+                        win: win
+                    };
+                    const viewStore = useViewStore();
+                    localStorage.setItem('playedLevels', JSON.stringify(Array.from(playedLevels.entries())));
+                    viewStore.setSceneData(dataToPass);
+                    viewStore.setView('victory');
+                }
+            });
+            return;
+        }
+
+        this.physics.world.removeCollider(enemy);
 
         let explosion = this.add.sprite(enemy.x, enemy.y, 'explosion').setScale((this.player.width * this.player.scale) / 48).setDepth(2);
         explosion.anims.play('explosion', true);
@@ -615,13 +753,26 @@ export default class GameScene extends Phaser.Scene {
 
         let enemy = this.sceneEnemies[enemyID];
         enemy.id = 'enemy' + enemyID;
-        console.log(enemy.getData('appearanceTime') + " " + Math.round(elapsedDistance * 100) / 100);
-        if (enemy.getData('appearanceTime') <= Math.round(elapsedDistance * 100) / 100 && enemy.getData('onScreen') === false) {
+        const shouldSpawn =
+            enemy.getData('appearanceTime') <= Math.round(elapsedDistance * 100) / 100 &&
+            !enemy.getData('onScreen') &&
+            !enemy.getData('hasSpawned') &&
+            !enemy.getData('collided');
+
+        if (shouldSpawn) {
+            // Reset enemy state for spawn
+            enemy.setScale(0);
+            enemy.y = HEIGHT / 2;
+            enemy.setVisible(true);
+
+            // Update enemy data
             enemy.setData('onScreen', true);
+            enemy.setData('hasSpawned', true);
             spawnedEnemies++;
+
+            // Start scaling animation
             this.tweens.add({
                 targets: enemy,
-                y: HEIGHT / 2,
                 scale: (topWidth / 5) / 32,
                 duration: 1500,
                 onComplete: () => {
@@ -632,8 +783,8 @@ export default class GameScene extends Phaser.Scene {
     }
 
     moveEnemy(enemy) {
-        if (enemy) {
-            let direction = 0
+        if (enemy && introComplete) { // Only move enemies if intro is complete
+            let direction = 0;
             let duration = 5000;
             let initialScale = enemy.scale;
 
@@ -662,6 +813,7 @@ export default class GameScene extends Phaser.Scene {
                 },
                 onComplete: () => {
                     enemy.setData('onScreen', false);
+
                 }
             });
         }
@@ -753,53 +905,72 @@ export default class GameScene extends Phaser.Scene {
             this.player.y = halfHeight * 2 - this.player.height;
             animationSpeed = 0.00007;
 
-            this.time.addEvent({
-                delay: 1000,
-                callback: () => {
-                    removeLoading(this);
-                    startGame = true;
-                    this.lakitu.id = 'lakitu';
-                    this.tweens.add({
-                        targets: this.lakitu,
-                        x: {
-                            value: WIDTH / 3,
-                            ease: 'Cosine.easeInOut'
-                        },
-                        y: {
-                            value: WIDTH / 6 + WIDTH / 14,
-                            ease: 'Cubic.easeOut'
-                        },
-                        scale: (HEIGHT / 4) / 410,
-                        duration: 1500,
-                        loop: false,
-                        onComplete: () => {
+            const viewStore = useViewStore();
+            if (viewStore.continueGame === true) {
+                viewStore.continueGameState(false);
+                startGame = true;
+                introComplete = true;
+                greenLight = true;
+                // Load saved state before starting any timers or calculations
+                resumeGameState(this);
+                // Prevent initial distance calculation
+                window.gameState = window.gameState || {};
+                window.gameState.isRestoringState = true;
 
-                            this.lakitu.anims.play('lakituStart', true);
-                            this.lakitu.on('animationcomplete', () => {
-                                this.lakitu.anims.stop();
-                                greenLight = true;
-                                this.tweens.add({
-                                    targets: this.lakitu,
-                                    x: {
-                                        value: WIDTH,
-                                        ease: 'Cubic.easeIn'
-                                    },
-                                    y: {
-                                        value: 0,
-                                        ease: 'Cosine.easeOut'
-                                    },
-                                    scale: 0,
-                                    duration: 1500,
-                                    onComplete: () => {
-                                        this.lakitu.destroy();
-                                    }
+
+                // If game was saved during intro, we need to show intro
+            }
+            if (!startGame) {
+                this.time.addEvent({
+                    delay: 1000,
+                    callback: () => {
+                        removeLoading(this);
+                        startGame = true;
+                        this.lakitu.id = 'lakitu';
+                        this.tweens.add({
+                            targets: this.lakitu,
+                            x: {
+                                value: WIDTH / 3,
+                                ease: 'Cosine.easeInOut'
+                            },
+                            y: {
+                                value: WIDTH / 6 + WIDTH / 14,
+                                ease: 'Cubic.easeOut'
+                            },
+                            scale: (HEIGHT / 4) / 410,
+                            duration: 1500,
+                            loop: false,
+                            onComplete: () => {
+
+                                this.lakitu.anims.play('lakituStart', true);
+                                this.lakitu.on('animationcomplete', () => {
+                                    this.lakitu.anims.stop();
+                                    greenLight = true;
+                                    this.tweens.add({
+                                        targets: this.lakitu,
+                                        x: {
+                                            value: WIDTH,
+                                            ease: 'Cubic.easeIn'
+                                        },
+                                        y: {
+                                            value: 0,
+                                            ease: 'Cosine.easeOut'
+                                        },
+                                        scale: 0,
+                                        duration: 1500,
+                                        onComplete: () => {
+                                            introComplete = true;
+                                            this.lakitu.destroy();
+
+                                        }
+                                    });
                                 });
-                            });
-                        }
-                    });
-                },
-                loop: false
-            });
+                            }
+                        });
+                    },
+                    loop: false
+                });
+            }
         }
     }
     racePreparations() {
@@ -807,8 +978,15 @@ export default class GameScene extends Phaser.Scene {
             if (speed < this.currentLevel.speed) {
                 this.addSpeed();
             }
-            this.startTimer();
-            elapsedDistance = (((speed / 2.75) * 120) / 3600) * this.timer;
+            // Only start timer if it's not already running
+            if (!this.timerEvent) {
+                this.startTimer();
+
+            }
+            // Skip distance calculation if we're restoring state
+            if (!window.gameState?.isRestoringState) {
+                elapsedDistance = (((speed / 2.75) * 120) / 3600) * this.timer;
+            }
             this.spawnEnemy(spawnedEnemies);
         }
     }
@@ -816,6 +994,7 @@ export default class GameScene extends Phaser.Scene {
 
 
     startTimer() {
+        this.timer = window.gameState?.timer || 0;
         if (!this.timerEvent) {
             this.timerEvent = this.time.addEvent({
                 delay: 1000,
@@ -825,6 +1004,7 @@ export default class GameScene extends Phaser.Scene {
                 callbackScope: this,
                 loop: true
             });
+
         }
     }
 
@@ -841,21 +1021,24 @@ export default class GameScene extends Phaser.Scene {
         // Determine the level index
         let levelIndex = playedLevels.size - 1 < levels.levels.length ? playedLevels.size : getRandomNumber(0, levels.levels.length - 1);
 
-// Randomly select a difficulty index that hasn't been played for this level
+        // Randomly select a difficulty index that hasn't been played for this level
         let difficultyIndex = 0;
         do {
             difficultyIndex = getRandomNumber(0, 2);
         } while (playedLevels.get(levelIndex) === difficultyIndex);
 
-// Store the new played level and difficulty version
+        // Store the new played level and difficulty version
         playedLevels.set(levelIndex, difficultyIndex);
         console.log(difficultyIndex);
+
         localStorage.setItem('playedLevels', JSON.stringify(Array.from(playedLevels.entries())));
 
 
         this.currentLevel = levels.levels[levelIndex]; //TODO add random level selection, and dificulty...and make sure im not repeating levels i played before. LocalStorage?
+        this.currentLevel.diffIndex = difficultyIndex;
         console.log(this.currentLevel);
         this.dificulty = this.currentLevel.difficulty;
+        console.log(this.dificulty);
 
         this.currentLevel.difficultyVersions[difficultyIndex].enemies.forEach(enemy => {
             // Example: Place enemies at their positions based on the data as a red circle
@@ -929,7 +1112,7 @@ export default class GameScene extends Phaser.Scene {
 
         // Base speed calculation
         const baseSpeed = WIDTH / 400;
-        let steerSpeed = baseSpeed  * animationSpeed/2;
+        let steerSpeed = baseSpeed * animationSpeed / 2;
 
 
         // Mouse movement logic
@@ -1072,6 +1255,9 @@ export default class GameScene extends Phaser.Scene {
         this.info = this.add.graphics().setDepth(3);
     }
 
+
+
+
 }
 
 function drawPolygon(graphics, x1, x2, x3, x4, y1, y2, color) {
@@ -1158,6 +1344,7 @@ function getRandomNumber(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+
 function saveGameState(scene) {
     // Save all global variables and scene state
     const gameState = {
@@ -1243,18 +1430,55 @@ function saveGameState(scene) {
 }
 
 function resumeGameState(scene) {
+
     const savedState = JSON.parse(localStorage.getItem('gameState'));
     if (!savedState) {
         console.warn('No saved state found');
         return;
     }
 
+
+    // Preserve the elapsed distance before any other operations
+    // Mark that we're loading a saved state
+    window.gameState = window.gameState || {};
+    window.gameState.loadedState = true;
+
+    // Set the elapsed distance first
+    elapsedDistance = savedState.globalVars.elapsedDistance;
+    startGame = savedState.globalVars.startGame;
+
+    // Ensure these values persist
+    Object.defineProperty(window.gameState, 'elapsedDistance', {
+        value: elapsedDistance,
+        writable: false,
+        configurable: true
+    });
     // Reset the current scene state
     scene.resetGameState();
-
     // Restore global variables
     Object.assign(window, savedState.globalVars);
-    scene.timer = savedState.globalVars.timer;
+
+    // Ensure timer is properly restored
+    scene.timer = savedState.globalVars.timer || 0;
+    elapsedDistance = savedState.globalVars.elapsedDistance;
+    // Start the timer with the saved value
+    if (scene.timer > 0) {
+        scene.timerEvent = scene.time.addEvent({
+            delay: 1000,
+            callback: () => {
+                if (!window.gameState.isRestoringState) {
+                    scene.timer++;
+                }
+            },
+            callbackScope: scene,
+            loop: true,
+            startAt: scene.timer * 1000 // Start from the saved time
+        });
+    }
+    // Remove restoration flag after a short delay to ensure everything is properly initialized
+    scene.time.delayedCall(100, () => {
+        window.gameState.isRestoringState = false;
+    });
 
     // Create graphics objects with correct depth
     scene.setupGraphics();
@@ -1288,61 +1512,95 @@ function resumeGameState(scene) {
 
 
     // Restore enemies with their movement patterns
+    // In the resumeGameState function, replace the enemies restoration section with this updated logic:
+
+    // Restore enemies with their movement patterns
+    // Restore enemies with their movement patterns
+    // Reset enemy array
     scene.sceneEnemies = [];
+
+    // Track already spawned enemies to prevent respawning
+    const processedEnemyTimes = new Set();
+
     savedState.enemies.forEach((enemyData, index) => {
         const enemy = scene.physics.add.sprite(
             enemyData.x,
             enemyData.y,
             enemyData.texture
         ).setDepth(2).setOrigin(0.5, 1);
-
         enemy.setScale(enemyData.scale);
         enemy.startPosition = enemyData.startPosition;
+
+        // Mark enemy as processed to prevent respawning
+        processedEnemyTimes.add(enemyData.appearanceTime);
+
+        // Set initial state based on appearance time and saved state
+        const hasAppeared = enemyData.appearanceTime <= savedState.globalVars.elapsedDistance;
+        const shouldBeVisible = hasAppeared && enemyData.onScreen && !enemyData.collided;
+
+        // Set enemy data
         enemy.setData('onScreen', enemyData.onScreen);
         enemy.setData('collided', enemyData.collided);
         enemy.setData('appearanceTime', enemyData.appearanceTime);
+        enemy.setData('hasSpawned', hasAppeared);
 
-        // Important: Only make the enemy visible if it's supposed to be on screen and not collided
-        enemy.setVisible(!enemyData.collided);
+        // Set visibility
+        enemy.setVisible(shouldBeVisible);
 
         const defaultAnim = enemyData.startPosition === 'left' ? 'redSRight' :
             enemyData.startPosition === 'right' ? 'redSLeft' : 'frontCar';
         enemy.anims.play(enemyData.currentAnim || defaultAnim, true);
 
-        // Only restore movement for visible, non-collided enemies that are on screen
-        if (enemyData.onScreen && !enemyData.collided) {
-            let direction = WIDTH / 2;
-            switch (enemyData.startPosition) {
-                case 'left':
-                    direction = WIDTH / 2 - 2 * bottomWidth;
-                    break;
-                case 'right':
-                    direction = WIDTH / 2 + 2 * bottomWidth;
-                    break;
-            }
-
-            const totalDistance = HEIGHT + 32 * (savedState.player.scale + 1.5) - HEIGHT / 2;
-            const remainingDistance = HEIGHT + 32 * (savedState.player.scale + 1.5) - enemyData.y;
-            const progress = 1 - (remainingDistance / totalDistance);
-            const duration = (5000 / (scene.currentLevel.speed / 2.75)) * (1 - progress);
-
-            scene.tweens.add({
-                targets: enemy,
-                x: direction,
-                y: HEIGHT + 32 * (savedState.player.scale + 1.5),
-                scale: savedState.player.scale + 1,
-                ease: 'Linear',
-                duration: duration,
-                onComplete: () => {
-                    enemy.setData('onScreen', false);
-                }
-            });
-        } else if (!enemyData.onScreen && !enemyData.collided && enemyData.appearanceTime > savedState.globalVars.elapsedDistance) {
-            // Reset enemies that haven't appeared yet
-            enemy.setScale(0);
-            enemy.y = HEIGHT / 2;
-            enemy.x = enemyData.x;
+        // Calculate destination based on start position
+        let direction = WIDTH / 2;
+        switch (enemyData.startPosition) {
+            case 'left':
+                direction = WIDTH / 2 - 2 * bottomWidth;
+                break;
+            case 'right':
+                direction = WIDTH / 2 + 2 * bottomWidth;
+                break;
         }
+
+        // Handle enemy movement restoration
+        if (hasAppeared) {
+            // If enemy should be on screen and not collided
+            if (enemyData.onScreen && !enemyData.collided) {
+                // Calculate remaining animation
+                const totalDistance = HEIGHT + 32 * (savedState.player.scale + 1.5) - HEIGHT / 2;
+                const distanceTraveled = enemyData.y - HEIGHT / 2;
+                const remainingDistance = totalDistance - distanceTraveled;
+                const originalDuration = 5000 / (scene.currentLevel.speed / 2.75);
+                const remainingDuration = (remainingDistance / totalDistance) * originalDuration;
+                if (remainingDistance > 0) {
+                    scene.tweens.add({
+                        targets: enemy,
+                        x: direction,
+                        y: HEIGHT + 32 * (savedState.player.scale + 1.5),
+                        scale: savedState.player.scale + 1,
+                        ease: 'Linear',
+                        duration: remainingDuration,
+                        onComplete: () => {
+                            enemy.setData('onScreen', false);
+                            enemy.setVisible(false);
+                        }
+                    });
+                } else {
+                    enemy.setData('onScreen', false);
+                    enemy.setVisible(false);
+                }
+            } else if (!enemyData.collided) {
+                // Enemy has appeared but waiting to be shown
+                enemy.setScale(0);
+                enemy.y = HEIGHT / 2;
+                enemy.x = direction;
+                enemy.setVisible(true);
+                // Reset the enemy for proper spawning
+                enemy.setData('hasSpawned', false);
+                enemy.setData('onScreen', false);
+            }
+        }
+
 
         if (scene.player) {
             scene.physics.add.overlap(scene.player, enemy, scene.handleCollision, null, scene);
@@ -1350,48 +1608,14 @@ function resumeGameState(scene) {
         scene.sceneEnemies.push(enemy);
     });
 
-    // Adjust spawnedEnemies counter to account for already-spawned enemies
-    spawnedEnemies = savedState.enemies.filter(e => e.onScreen || e.collided).length;
+    // Update global spawned enemies counter based on appeared enemies
+    spawnedEnemies = savedState.enemies.filter(e =>
+        e.appearanceTime <= savedState.globalVars.elapsedDistance || e.collided
+    ).length;
 
+    // Store processed enemy times in game state to prevent respawning
+    window.gameState.processedEnemyTimes = processedEnemyTimes;
 
-
-    // Restore Lakitu with proper animation state
-    if (savedState.lakitu && savedState.lakitu.visible) {
-        scene.lakitu = scene.add.sprite(
-            savedState.lakitu.x,
-            savedState.lakitu.y,
-            'lakituStart'
-        ).setDepth(2);
-        scene.lakitu.setScale(savedState.lakitu.scale);
-        scene.lakitu.setAlpha(savedState.lakitu.alpha);
-
-        if (!savedState.lakitu.isExiting) {
-            // If Lakitu was in entrance animation
-            scene.lakitu.anims.play('lakituStart', true);
-            scene.lakitu.on('animationcomplete', () => {
-                scene.lakitu.anims.stop();
-                greenLight = true;
-                scene.tweens.add({
-                    targets: scene.lakitu,
-                    x: WIDTH,
-                    y: 0,
-                    scale: 0,
-                    duration: 1500,
-                    onComplete: () => scene.lakitu.destroy()
-                });
-            });
-        } else {
-            // If Lakitu was already exiting
-            scene.tweens.add({
-                targets: scene.lakitu,
-                x: WIDTH,
-                y: 0,
-                scale: 0,
-                duration: 1500 * (1 - savedState.lakitu.x / WIDTH),
-                onComplete: () => scene.lakitu.destroy()
-            });
-        }
-    }
 
     // Restore finish line with proper animation state
     if (savedState.finishLine) {

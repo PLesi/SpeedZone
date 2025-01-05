@@ -5,7 +5,7 @@
       <img v-else src="/img/DEFEAT.png" id="winLogo" alt="Defeat" />
       <div class="buttonsAndInfo">
         <p> Level: <span class="value">{{ data?.level }}</span></p>
-        <p> Obtiažnosť: <span class="value">{{ data?.dificulty }}</span> </p>
+        <p> Obtiažnosť: <span class="value">{{ data?.difficulty }}-{{data?.diffVersion}}</span> </p>
       </div>
       <button v-if="!data?.win" @click="playAgain" class="menuButton">Hrať znova</button>
       <button v-else @click="nextGame" class="menuButton">Pokračovať</button>

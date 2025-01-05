@@ -105,7 +105,11 @@ export default {
 
 
     gContinue() {
+      const viewStore = useViewStore();
+      viewStore.continueGameState(true);
+      viewStore.setView('game');
       console.log("Continuing game...");
+
     },
 
     mute() {
