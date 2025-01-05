@@ -2,6 +2,10 @@
   <div>
     <!-- Hlavné menu -->
     <div v-if="!gameStarted" class="menu">
+      <audio ref="audioMenu" loop autoplay>
+        <source src="/music/audioMenu.mp3" type="audio/mp3" />
+      </audio>
+
       <img class="menuBackground" src="/img/menu.png" alt="Pozadie menu" />
 
       <div class="muteContainer">
@@ -15,10 +19,6 @@
           <img src="/img/info.png" id="ruleButton" alt="Ikona informacii" />
         </button>
       </div>
-
-      <audio ref="audioMenu" loop>
-        <source src="/music/audioMenu.mp3" type="audio/mp3" />
-      </audio>
 
       <div class="menuContent">
         <img src="/img/nadpis.png" id="title" alt="Nadpis" />
@@ -53,7 +53,7 @@
 
     <!-- Herná scéna -->
     <div v-else ref="gameContainer">
-      <audio ref="audioGame" loop>
+      <audio ref="audioGame" loop autoplay>
         <source src="/music/audioGame.mp3" type="audio/mp3" />
       </audio>
     </div>
@@ -74,11 +74,12 @@ export default {
       currentRuleIndex: 0,
 
       isMuted: false,
+      gameAudio: 0,
 
       rules: [
         {
           title: "Cieľ hry:",
-          content: "Vaším cieľom je prejsť stanovenú vzdialenosť bez straty všetkých životov. Vyhýbajte sa prekážkám, ktoré vám stoja v ceste, a urobte všetko pre to, aby ste zostali čo najdlhšie nažive."
+          content: "Vaším cieľom je prejsť stanovenú vzdialenosť bez straty všetkých životov. Vyhýbajte sa prekážkam, ktoré vám stoja v ceste, a urobte všetko pre to, aby ste zostali čo najdlhšie nažive."
         },
         {
           title: "Ovládanie:",
@@ -90,13 +91,6 @@ export default {
         }
       ]
     };
-  },
-
-  mounted() {
-    if (!this.isMuted) {
-      this.$refs.audioMenu.load();
-      this.$refs.audioMenu.play();
-    }
   },
 
   methods: {
@@ -112,9 +106,17 @@ export default {
       };
       this.game = new Phaser.Game(config);
 
-      if (!this.isMuted) {
-        this.$refs.audioGame.play();
+      if (this.$refs.audioMenu) {
+        this.$refs.audioMenu.pause();
       }
+
+      this.$nextTick(() => {
+        if (this.isMuted) {
+          this.$refs.audioGame.pause();
+        } else {
+          this.$refs.audioGame.play();
+        }
+      });
     },
 
     gContinue() {
@@ -126,14 +128,8 @@ export default {
 
       if (this.isMuted) {
         this.$refs.audioMenu.pause();
-        this.$refs.audioGame.pause();
-      }
-      else {
-        if (this.gameStarted) {
-          this.$refs.audioGame.play();
-        } else {
-          this.$refs.audioMenu.play();
-        }
+      } else {
+        this.$refs.audioMenu.play();
       }
     },
 
@@ -157,7 +153,6 @@ export default {
         this.currentRuleIndex--;
       }
     },
-
     printAllRules() {
       const printableText = this.rules.map(rule => `
       <h3>${rule.title}</h3>
@@ -166,7 +161,7 @@ export default {
 
       let printWindow = window.open("", "_blank");
       printWindow.document.write(`
-      <html>
+      <html lang="sk">
         <head>
             <title>Pravidlá hry</title>
             <style>
@@ -201,6 +196,7 @@ export default {
 };
 </script>
 
+
 <style scoped>
 @font-face {
   font-family: "PressStart";
@@ -231,13 +227,17 @@ export default {
 }
 
 .menuContent {
-  position: relative;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -60%);
   display: flex;
   flex-direction: column;
   gap: 1em;
-  align-items: center;
   font-family: PressStart, sans-serif;
+  width: max-content;
 }
+
 
 #title {
   width: 20vw;
@@ -248,15 +248,18 @@ export default {
 }
 
 .menuButton {
-  font-size: 2.1vh;
+  font-size: 2.2vh;
   background-color: rgba(0, 0, 0, 0.7);
   color: white;
   border: 2px solid #a2d2ff;
   border-radius: 8px;
   box-shadow: 0 0 8px 4px #d7f9f8;
   transition: background-color 0.3s, color 0.3s;
-  width: 13.5vw;
-  height: 7.5vh;
+  padding: 1em 2em;
+  white-space: nowrap;
+  text-align: center;
+  width: 100%;
+  height: auto;
 }
 
 .menuButton:hover {
@@ -305,7 +308,7 @@ export default {
 }
 
 .rulesContent {
-  background:#ffb7c5;
+  background: #ffb7c5;
   padding-left: 2.5vw;
   padding-right: 2.5vw;
   border-radius: 8px;
@@ -323,16 +326,17 @@ export default {
 
 h2 strong {
   color: black;
-  font-size: 5vh;
+  font-size: 4vh;
 }
 
 p {
   text-align: left;
+  font-size: 2vh;
 }
 
 .rulesContent .text {
   text-align: left;
-  font-size: 1.2em;
+  font-size: 2.2vh;
   color: black;
   padding-left: 0;
 }
@@ -364,7 +368,7 @@ p {
   background-color: #495057;
 }
 
-.printButton  {
+.printButton {
   position: absolute;
   top: 4vh;
   right: 2vw;
@@ -415,4 +419,14 @@ button {
   transform: scale(1.1);
 }
 
+@media (min-width: 550px) and (max-width: 1024px){
+  .rulesContent {
+    width: 60vw;
+    height: 67vh;
+  }
+
+  .navigation {
+    gap: 20vw;
+  }
+}
 </style>
